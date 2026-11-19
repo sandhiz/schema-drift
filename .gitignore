@@ -1,7 +1,7 @@
 # Compiled binaries and release artifacts
-schema-drift
-schema-drift.exe
-schema-drift-*
+/schema-drift
+/schema-drift.exe
+/schema-drift-*
 dist/
 
 # Test and coverage outputs
@@ -11,6 +11,7 @@ coverage.out
 # Generated HTML reports (keep docs/demo-report.html if tracked)
 *.html
 !internal/render/templates/report.html
+!internal/web/templates/app.html
 !docs/demo-report.html
 
 # Tooling scratch

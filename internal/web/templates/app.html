@@ -1,0 +1,2288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>schema-drift · Database Diff Studio</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg-canvas: #ffffff;
+      --bg-rail: #fafafa;
+      --bg-surface: #f4f4f5;
+      --bg-hover: #ececef;
+      --border: #e4e4e7;
+      --border-strong: #d4d4d8;
+      --ink-primary: #09090b;
+      --ink-secondary: #3f3f46;
+      --ink-muted: #52525b;
+
+      --cta-bg: #111113;
+      --cta-hover: #27272a;
+      --cta-ink: #ffffff;
+      --focus-ring: #09090b;
+
+      --a-ink: #15803d;
+      --a-bg: rgba(21, 128, 61, 0.08);
+      --a-border: rgba(21, 128, 61, 0.28);
+      --a-solid: #16a34a;
+
+      --b-ink: #b91c1c;
+      --b-bg: rgba(185, 28, 28, 0.08);
+      --b-border: rgba(185, 28, 28, 0.28);
+      --b-solid: #dc2626;
+
+      --mod-ink: #b45309;
+      --mod-bg: rgba(180, 83, 9, 0.09);
+      --mod-border: rgba(180, 83, 9, 0.30);
+      --mod-solid: #d97706;
+
+      --eq-ink: #52525b;
+      --eq-bg: rgba(113, 113, 122, 0.10);
+      --eq-border: rgba(113, 113, 122, 0.25);
+      --eq-solid: #a1a1aa;
+
+      --unmap-ink: #6d28d9;
+      --unmap-bg: rgba(109, 40, 217, 0.09);
+      --unmap-border: rgba(109, 40, 217, 0.28);
+
+      --case-ink: #0369a1;
+      --case-bg: rgba(3, 105, 161, 0.09);
+      --case-border: rgba(3, 105, 161, 0.28);
+
+      --console-bg: #fafafa;
+      --radius: 6px;
+      --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg-canvas: #09090b;
+        --bg-rail: #0e0e11;
+        --bg-surface: #141418;
+        --bg-hover: #1d1d23;
+        --border: #24242c;
+        --border-strong: #34343f;
+        --ink-primary: #f4f4f5;
+        --ink-secondary: #d4d4d8;
+        --ink-muted: #a1a1aa;
+
+        --cta-bg: #f4f4f5;
+        --cta-hover: #ffffff;
+        --cta-ink: #09090b;
+        --focus-ring: #f4f4f5;
+
+        --a-ink: #4ade80;
+        --a-bg: rgba(34, 197, 94, 0.11);
+        --a-border: rgba(74, 222, 128, 0.30);
+        --a-solid: #22c55e;
+
+        --b-ink: #f87171;
+        --b-bg: rgba(239, 68, 68, 0.11);
+        --b-border: rgba(248, 113, 113, 0.30);
+        --b-solid: #ef4444;
+
+        --mod-ink: #fbbf24;
+        --mod-bg: rgba(245, 158, 11, 0.12);
+        --mod-border: rgba(251, 191, 36, 0.30);
+        --mod-solid: #f59e0b;
+
+        --eq-ink: #a1a1aa;
+        --eq-bg: rgba(161, 161, 170, 0.10);
+        --eq-border: rgba(161, 161, 170, 0.24);
+        --eq-solid: #52525b;
+
+        --unmap-ink: #c4b5fd;
+        --unmap-bg: rgba(139, 92, 246, 0.14);
+        --unmap-border: rgba(167, 139, 250, 0.32);
+
+        --case-ink: #7dd3fc;
+        --case-bg: rgba(56, 189, 248, 0.12);
+        --case-border: rgba(125, 211, 252, 0.28);
+
+        --console-bg: #0c0c0f;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg-canvas: #09090b;
+      --bg-rail: #0e0e11;
+      --bg-surface: #141418;
+      --bg-hover: #1d1d23;
+      --border: #24242c;
+      --border-strong: #34343f;
+      --ink-primary: #f4f4f5;
+      --ink-secondary: #d4d4d8;
+      --ink-muted: #a1a1aa;
+
+      --cta-bg: #f4f4f5;
+      --cta-hover: #ffffff;
+      --cta-ink: #09090b;
+      --focus-ring: #f4f4f5;
+
+      --a-ink: #4ade80;
+      --a-bg: rgba(34, 197, 94, 0.11);
+      --a-border: rgba(74, 222, 128, 0.30);
+      --a-solid: #22c55e;
+
+      --b-ink: #f87171;
+      --b-bg: rgba(239, 68, 68, 0.11);
+      --b-border: rgba(248, 113, 113, 0.30);
+      --b-solid: #ef4444;
+
+      --mod-ink: #fbbf24;
+      --mod-bg: rgba(245, 158, 11, 0.12);
+      --mod-border: rgba(251, 191, 36, 0.30);
+      --mod-solid: #f59e0b;
+
+      --eq-ink: #a1a1aa;
+      --eq-bg: rgba(161, 161, 170, 0.10);
+      --eq-border: rgba(161, 161, 170, 0.24);
+      --eq-solid: #52525b;
+
+      --unmap-ink: #c4b5fd;
+      --unmap-bg: rgba(139, 92, 246, 0.14);
+      --unmap-border: rgba(167, 139, 250, 0.32);
+
+      --case-ink: #7dd3fc;
+      --case-bg: rgba(56, 189, 248, 0.12);
+      --case-border: rgba(125, 211, 252, 0.28);
+
+      --console-bg: #0c0c0f;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    ::selection { background: var(--border-strong); color: var(--ink-primary); }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--bg-canvas);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-strong) transparent;
+    }
+    *::-webkit-scrollbar { width: 7px; height: 7px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    *::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+
+    :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+
+    .num { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); }
+    .is-hidden { display: none !important; }
+
+    .icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Full-Viewport IDE App Shell */
+    .studio {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg-canvas);
+    }
+
+    /* Slim Top Bar */
+    .topbar {
+      height: 46px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 16px;
+      background: var(--bg-rail);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-primary);
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      color: var(--ink-primary);
+      white-space: nowrap;
+    }
+
+    .ro-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--a-ink);
+      background: var(--a-bg);
+      border: 1px solid var(--a-border);
+      padding: 2px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .topbar-crumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-left: 10px;
+      border-left: 1px solid var(--border);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 30px;
+      padding: 0 10px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-canvas);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background-color 140ms ease, border-color 140ms ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn.is-active { background: var(--bg-surface); border-color: var(--border-strong); }
+    .btn.is-copied { color: var(--a-ink); border-color: var(--a-border); background: var(--a-bg); }
+
+    .btn-cta {
+      width: 100%;
+      height: 36px;
+      background: var(--cta-bg);
+      border-color: var(--cta-bg);
+      color: var(--cta-ink);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .btn-cta:hover:not(:disabled) {
+      background: var(--cta-hover);
+      border-color: var(--cta-hover);
+    }
+
+    .btn-cta-inline {
+      height: 34px;
+      padding: 0 14px;
+      background: var(--cta-bg);
+      border-color: var(--cta-bg);
+      color: var(--cta-ink);
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+
+    .btn-cta-inline:hover:not(:disabled) {
+      background: var(--cta-hover);
+      border-color: var(--cta-hover);
+    }
+
+    .seg {
+      display: inline-flex;
+      gap: 2px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px;
+    }
+
+    .seg-btn {
+      border: 0;
+      background: transparent;
+      color: var(--ink-muted);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .seg-btn:hover { color: var(--ink-primary); }
+    .seg-btn.is-active {
+      background: var(--bg-canvas);
+      color: var(--ink-primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Main Split Body */
+    .workspace {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Left Connection Inspector Rail */
+    .conn-rail {
+      width: 372px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-rail);
+      border-right: 1px solid var(--border);
+      min-height: 0;
+    }
+
+    .conn-rail-scroll {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .conn-block {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .conn-block-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .side-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dot { width: 7px; height: 7px; border-radius: 999px; flex-shrink: 0; }
+    .dot-a { background: var(--a-solid); }
+    .dot-b { background: var(--b-solid); }
+    .dot-mod { background: var(--mod-solid); }
+    .dot-eq { background: var(--eq-solid); }
+
+    .conn-heading {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink-primary);
+    }
+
+    .conn-head-tools {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-xs {
+      height: 24px;
+      padding: 0 8px;
+      font-size: 11.5px;
+    }
+
+    .engine-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 4px;
+      background: var(--bg-surface);
+      padding: 3px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .eng-btn {
+      border: 0;
+      background: transparent;
+      color: var(--ink-secondary);
+      font-family: var(--font-sans);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .eng-btn:hover { color: var(--ink-primary); }
+    .eng-btn.is-active {
+      background: var(--bg-canvas);
+      color: var(--ink-primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .c12 { grid-column: span 12; }
+    .c8 { grid-column: span 8; }
+    .c6 { grid-column: span 6; }
+    .c4 { grid-column: span 4; }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-secondary);
+    }
+
+    .input, .select {
+      width: 100%;
+      height: 30px;
+      padding: 0 9px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-canvas);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      transition: border-color 140ms ease;
+    }
+    .input.mono { font-family: var(--font-mono); font-size: 12px; }
+    .input::placeholder { color: var(--ink-muted); }
+    .input:focus, .select:focus { outline: none; border-color: var(--ink-secondary); }
+
+    .pw-wrap { position: relative; display: flex; align-items: center; }
+    .pw-wrap .input { padding-right: 30px; }
+    .pw-toggle {
+      position: absolute;
+      right: 4px;
+      border: 0;
+      background: transparent;
+      color: var(--ink-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .pw-toggle:hover { color: var(--ink-primary); }
+
+    .test-line {
+      font-size: 11.5px;
+      color: var(--ink-muted);
+      min-height: 16px;
+      word-break: break-word;
+    }
+    .test-line.is-ok { color: var(--a-ink); font-weight: 500; }
+    .test-line.is-err { color: var(--b-ink); font-weight: 500; }
+
+    .swap-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-canvas);
+    }
+
+    .rail-footer {
+      flex-shrink: 0;
+      padding: 12px 16px;
+      background: var(--bg-rail);
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .check-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--ink-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+    .check-label input { accent-color: var(--ink-primary); cursor: pointer; }
+
+    .rail-note {
+      font-size: 12px;
+      color: var(--ink-muted);
+      text-align: center;
+    }
+
+    .rail-error {
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      border: 1px solid var(--b-border);
+      background: var(--b-bg);
+      color: var(--b-ink);
+      font-size: 12px;
+      word-break: break-word;
+    }
+
+    /* Right Main Stage */
+    .stage {
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-canvas);
+      overflow: hidden;
+    }
+
+    /* Welcome / Studio Overview */
+    .welcome {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 28px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .welcome-hero {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .welcome-copy {
+      max-width: 66ch;
+    }
+
+    .welcome-title {
+      margin: 0 0 6px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink-primary);
+    }
+
+    .welcome-sub {
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--ink-secondary);
+    }
+
+    .welcome-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--bg-rail);
+    }
+
+    .step-cell {
+      padding: 14px 16px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .step-cell:last-child { border-right: 0; }
+    .step-label { font-size: 12px; font-weight: 600; color: var(--ink-primary); }
+    .step-desc { font-size: 12px; color: var(--ink-secondary); margin: 0; }
+
+    .ref-block {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .ref-head {
+      padding: 10px 14px;
+      background: var(--bg-rail);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .ref-title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-primary);
+    }
+
+    .ref-meta {
+      font-size: 11.5px;
+      color: var(--ink-muted);
+    }
+
+    .ref-table-wrap { overflow-x: auto; }
+    .ref-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .ref-table th {
+      text-align: left;
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink-muted);
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .ref-table td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink-primary);
+    }
+    .ref-table tr:last-child td { border-bottom: 0; }
+
+    /* Diff Result View inside Right Stage */
+    .diff-stage {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .diff-summary-bar {
+      flex-shrink: 0;
+      padding: 10px 16px;
+      background: var(--bg-rail);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .diff-bar-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .diff-status-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .status-pill.is-drift { color: var(--mod-ink); background: var(--mod-bg); border-color: var(--mod-border); }
+    .status-pill.is-ok { color: var(--a-ink); background: var(--a-bg); border-color: var(--a-border); }
+
+    .ep-summary {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .diff-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .diff-bar-metrics {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-strip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-canvas);
+      color: var(--ink-secondary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .filter-tab:hover { background: var(--bg-hover); color: var(--ink-primary); }
+    .filter-tab.is-active {
+      background: var(--cta-bg);
+      border-color: var(--cta-bg);
+      color: var(--cta-ink);
+    }
+
+    .parity-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--ink-secondary);
+    }
+
+    .spectrum-bar {
+      width: 140px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--border);
+      overflow: hidden;
+      display: flex;
+    }
+    .seg-a { background: var(--a-solid); height: 100%; }
+    .seg-b { background: var(--b-solid); height: 100%; }
+    .seg-mod { background: var(--mod-solid); height: 100%; }
+    .seg-eq { background: var(--eq-solid); height: 100%; opacity: 0.6; }
+
+    /* Master-Detail Workbench inside Diff Stage */
+    .diff-split {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .table-tree {
+      width: 248px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      background: var(--bg-rail);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .tree-search-wrap {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .tree-search {
+      width: 100%;
+      height: 28px;
+      padding: 0 38px 0 28px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-canvas);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+    }
+    .tree-search:focus { outline: none; border-color: var(--ink-secondary); }
+    .tree-search-icon { position: absolute; left: 18px; color: var(--ink-muted); pointer-events: none; }
+    .tree-kbd {
+      position: absolute; right: 16px;
+      font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-muted);
+      border: 1px solid var(--border); border-radius: 3px; padding: 0 4px;
+    }
+
+    .tree-list {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tree-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 5px;
+      text-decoration: none;
+      color: var(--ink-primary);
+      font-size: 12px;
+    }
+    .tree-item:hover { background: var(--bg-hover); }
+    .tree-left { display: flex; align-items: center; gap: 7px; min-width: 0; }
+    .tree-name { font-family: var(--font-mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tree-counts { display: inline-flex; gap: 4px; font-family: var(--font-mono); font-size: 11px; flex-shrink: 0; }
+
+    .c-a { color: var(--a-ink); }
+    .c-b { color: var(--b-ink); }
+    .c-mod { color: var(--mod-ink); }
+    .note-muted { color: var(--ink-muted); font-size: 11.5px; }
+
+    .diff-inspector {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 14px 18px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .inspector-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .toolbar-left { font-size: 12px; color: var(--ink-secondary); font-weight: 500; }
+    .toolbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    .tbl-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-canvas);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .tbl-card[data-status="only_a"] { border-color: var(--a-border); }
+    .tbl-card[data-status="only_b"] { border-color: var(--b-border); }
+    .tbl-card[data-status="modified"] { border-color: var(--mod-border); }
+
+    .tbl-summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: var(--bg-rail);
+      user-select: none;
+    }
+    .tbl-summary::-webkit-details-marker { display: none; }
+    .tbl-summary:hover { background: var(--bg-surface); }
+    .tbl-card[open] > .tbl-summary { border-bottom: 1px solid var(--border); }
+
+    .tbl-title-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+    .chevron { transition: transform 140ms ease; color: var(--ink-muted); }
+    .tbl-card[open] .chevron { transform: rotate(90deg); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .badge-only_a { color: var(--a-ink); background: var(--a-bg); border-color: var(--a-border); }
+    .badge-only_b { color: var(--b-ink); background: var(--b-bg); border-color: var(--b-border); }
+    .badge-modified { color: var(--mod-ink); background: var(--mod-bg); border-color: var(--mod-border); }
+    .badge-identical { color: var(--eq-ink); background: var(--eq-bg); border-color: var(--eq-border); }
+    .badge-unmapped { color: var(--unmap-ink); background: var(--unmap-bg); border-color: var(--unmap-border); }
+    .badge-case { color: var(--case-ink); background: var(--case-bg); border-color: var(--case-border); }
+
+    .tbl-name { margin: 0; font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; color: var(--ink-primary); }
+    .tbl-origin { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); }
+    .tbl-metrics { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11.5px; flex-shrink: 0; }
+
+    .table-scroll { width: 100%; overflow-x: auto; }
+    .col-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .col-table th {
+      text-align: left; padding: 7px 12px; font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-muted);
+      background: var(--bg-surface); border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .col-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .col-table tr:last-child td { border-bottom: 0; }
+
+    .col-row[data-col-status="only_a"] td { background: var(--a-bg); }
+    .col-row[data-col-status="only_b"] td { background: var(--b-bg); }
+    .col-row[data-col-status="modified"] td { background: var(--mod-bg); }
+    body:not(.show-unchanged-cols) .tbl-card[data-status="modified"] .col-row[data-col-status="identical"] { display: none; }
+
+    .col-name { font-family: var(--font-mono); font-weight: 600; color: var(--ink-primary); white-space: nowrap; }
+    .type-stack { display: flex; flex-direction: column; gap: 3px; }
+    .type-raw { font-family: var(--font-mono); font-weight: 600; color: var(--ink-primary); }
+    .type-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11px; color: var(--ink-secondary); }
+    .canon-tag { font-family: var(--font-mono); font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: var(--bg-surface); border: 1px solid var(--border); }
+    .null-tag { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-muted); }
+    .def-code { font-family: var(--font-mono); font-size: 10.5px; background: var(--bg-surface); padding: 2px 6px; border-radius: 4px; word-break: break-all; }
+
+    .diff-pills { display: flex; flex-direction: column; gap: 4px; }
+    .attr-diff {
+      display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      font-size: 11.5px; background: var(--bg-canvas); border: 1px solid var(--mod-border);
+      border-radius: 5px; padding: 5px 9px; width: fit-content;
+    }
+    .attr-field { font-weight: 700; color: var(--mod-ink); text-transform: capitalize; }
+    .attr-val { font-family: var(--font-mono); font-size: 11px; color: var(--ink-primary); }
+    .empty-cell { color: var(--ink-muted); font-style: italic; font-size: 11.5px; }
+
+    .tbl-foot-note {
+      padding: 7px 12px; font-size: 11.5px; color: var(--ink-muted);
+      background: var(--bg-rail); border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    body.show-unchanged-cols .unchanged-hint { display: none; }
+
+    .empty-state {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 20px;
+      text-align: center;
+      color: var(--ink-secondary);
+      background: var(--bg-rail);
+    }
+
+    /* Collapsible Bottom Go Server Log Console */
+    .console-dock {
+      flex-shrink: 0;
+      background: var(--console-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .console-bar {
+      height: 32px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .console-bar:hover { background: var(--bg-surface); }
+
+    .console-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--ink-primary);
+      min-width: 0;
+    }
+
+    .console-preview {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-left: 8px;
+    }
+
+    .console-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .console-body {
+      height: 156px;
+      overflow-y: auto;
+      border-top: 1px solid var(--border);
+      padding: 8px 14px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      line-height: 1.55;
+      background: var(--bg-canvas);
+    }
+
+    .log-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .log-ts { color: var(--ink-muted); flex-shrink: 0; }
+    .log-lvl { font-weight: 700; width: 44px; flex-shrink: 0; }
+    .log-lvl.is-INFO { color: var(--case-ink); }
+    .log-lvl.is-OK { color: var(--a-ink); }
+    .log-lvl.is-WARN { color: var(--mod-ink); }
+    .log-lvl.is-ERROR { color: var(--b-ink); }
+    .log-lvl.is-SQL { color: var(--unmap-ink); }
+    .log-scope { color: var(--ink-secondary); width: 92px; flex-shrink: 0; }
+    .log-msg { color: var(--ink-primary); min-width: 0; }
+
+    /* Responsive fallback below 960px */
+    @media (max-width: 960px) {
+      .studio { height: auto; min-height: 100dvh; overflow: visible; }
+      .workspace { flex-direction: column; overflow: visible; }
+      .conn-rail { width: 100%; border-right: 0; border-bottom: 1px solid var(--border); }
+      .diff-split { flex-direction: column; }
+      .table-tree { width: 100%; border-right: 0; border-bottom: 1px solid var(--border); max-height: 240px; }
+      .steps-grid { grid-template-columns: minmax(0, 1fr); }
+      .step-cell { border-right: 0; border-bottom: 1px solid var(--border); }
+      .step-cell:last-child { border-bottom: 0; }
+      .topbar-crumb { display: none; }
+    }
+
+    @media (max-width: 560px) {
+      .topbar { height: auto; padding: 10px 12px; flex-wrap: wrap; }
+      .c8, .c6, .c4 { grid-column: span 12; }
+      .welcome { padding: 18px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="studio">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="7" height="16" rx="1.5"></rect>
+            <rect x="14" y="4" width="7" height="16" rx="1.5"></rect>
+            <path d="M10 9h4M10 15h4"></path>
+          </svg>
+        </span>
+        <h1 class="brand-title">schema-drift</h1>
+        <span class="ro-badge">Read-Only</span>
+        <span id="topbar-crumb" class="topbar-crumb is-hidden"></span>
+      </div>
+
+      <div class="topbar-actions">
+        <button type="button" class="btn is-hidden" id="toggle-rail-btn" title="Show or hide connection inspector">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+          Connections
+        </button>
+        <button type="button" class="btn" id="load-demo-btn">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          Sample Diff
+        </button>
+        <button type="button" class="btn" id="toggle-console-btn">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+          Logs <span id="log-count-badge" class="num">(0)</span>
+        </button>
+        <div class="seg" role="group" aria-label="Color theme">
+          <button type="button" class="seg-btn is-active" data-theme-choice="auto">Auto</button>
+          <button type="button" class="seg-btn" data-theme-choice="light">Light</button>
+          <button type="button" class="seg-btn" data-theme-choice="dark">Dark</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <!-- Left Connection Inspector Rail -->
+      <aside id="conn-rail" class="conn-rail" aria-label="Database connection inspector">
+        <div class="conn-rail-scroll">
+          <!-- Source A -->
+          <section class="conn-block" aria-label="Source A connection">
+            <div class="conn-block-head">
+              <div class="side-title">
+                <span class="dot dot-a"></span>
+                <h2 class="conn-heading">Source A</h2>
+              </div>
+              <div class="conn-head-tools">
+                <div class="seg" role="group" aria-label="Source A input mode">
+                  <button type="button" class="seg-btn is-active" data-mode-btn="a" data-mode="form">Form</button>
+                  <button type="button" class="seg-btn" data-mode-btn="a" data-mode="dsn">DSN</button>
+                </div>
+                <button type="button" class="btn btn-xs" id="test-a-btn">Test</button>
+              </div>
+            </div>
+
+            <div id="form-panel-a">
+              <div class="engine-tabs" style="margin-bottom:8px;" role="group" aria-label="Source A engine">
+                <button type="button" class="eng-btn is-active" data-eng-btn="a" data-engine="mysql">MySQL</button>
+                <button type="button" class="eng-btn" data-eng-btn="a" data-engine="postgres">PostgreSQL</button>
+                <button type="button" class="eng-btn" data-eng-btn="a" data-engine="mssql">SQL Server</button>
+              </div>
+              <div class="form-grid">
+                <div class="field c8">
+                  <label for="a-host">Host</label>
+                  <input id="a-host" class="input" type="text" value="127.0.0.1" placeholder="127.0.0.1">
+                </div>
+                <div class="field c4">
+                  <label for="a-port">Port</label>
+                  <input id="a-port" class="input mono num" type="text" value="3306" placeholder="3306">
+                </div>
+                <div class="field c6">
+                  <label for="a-database">Database</label>
+                  <input id="a-database" class="input" type="text" placeholder="app_staging">
+                </div>
+                <div class="field c6">
+                  <label for="a-schema">Schema (optional)</label>
+                  <input id="a-schema" class="input" type="text" placeholder="All or public">
+                </div>
+                <div class="field c4">
+                  <label for="a-user">User</label>
+                  <input id="a-user" class="input" type="text" value="root" autocomplete="off">
+                </div>
+                <div class="field c4">
+                  <label for="a-password">Password</label>
+                  <div class="pw-wrap">
+                    <input id="a-password" class="input" type="password" placeholder="Optional" autocomplete="new-password">
+                    <button type="button" class="pw-toggle" data-pw-target="a-password" aria-label="Toggle password A visibility">
+                      <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="field c4">
+                  <label for="a-ssl">TLS / SSL</label>
+                  <select id="a-ssl" class="select">
+                    <option value="">Default</option>
+                    <option value="disable">Disable</option>
+                    <option value="require">Require</option>
+                    <option value="skip-verify">Skip Verify</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div id="dsn-panel-a" class="is-hidden">
+              <div class="form-grid">
+                <div class="field c12">
+                  <label for="a-dsn">Connection String (DSN)</label>
+                  <input id="a-dsn" class="input mono" type="text" placeholder="mysql://user:pass@127.0.0.1:3306/app_staging" autocomplete="off">
+                </div>
+                <div class="field c6">
+                  <label for="a-dsn-schema">Schema Filter</label>
+                  <input id="a-dsn-schema" class="input" type="text" placeholder="Optional">
+                </div>
+                <div class="field c6">
+                  <label for="a-label">Display Label</label>
+                  <input id="a-label" class="input" type="text" placeholder="Optional">
+                </div>
+              </div>
+            </div>
+
+            <div class="test-line" id="status-a">Idle</div>
+          </section>
+
+          <div class="swap-divider">
+            <button type="button" class="btn btn-xs" id="swap-btn" title="Swap Source A and Target B">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"></path></svg>
+              Swap A / B
+            </button>
+          </div>
+
+          <!-- Target B -->
+          <section class="conn-block" aria-label="Target B connection">
+            <div class="conn-block-head">
+              <div class="side-title">
+                <span class="dot dot-b"></span>
+                <h2 class="conn-heading">Target B</h2>
+              </div>
+              <div class="conn-head-tools">
+                <div class="seg" role="group" aria-label="Target B input mode">
+                  <button type="button" class="seg-btn is-active" data-mode-btn="b" data-mode="form">Form</button>
+                  <button type="button" class="seg-btn" data-mode-btn="b" data-mode="dsn">DSN</button>
+                </div>
+                <button type="button" class="btn btn-xs" id="test-b-btn">Test</button>
+              </div>
+            </div>
+
+            <div id="form-panel-b">
+              <div class="engine-tabs" style="margin-bottom:8px;" role="group" aria-label="Target B engine">
+                <button type="button" class="eng-btn is-active" data-eng-btn="b" data-engine="mysql">MySQL</button>
+                <button type="button" class="eng-btn" data-eng-btn="b" data-engine="postgres">PostgreSQL</button>
+                <button type="button" class="eng-btn" data-eng-btn="b" data-engine="mssql">SQL Server</button>
+              </div>
+              <div class="form-grid">
+                <div class="field c8">
+                  <label for="b-host">Host</label>
+                  <input id="b-host" class="input" type="text" value="127.0.0.1" placeholder="127.0.0.1">
+                </div>
+                <div class="field c4">
+                  <label for="b-port">Port</label>
+                  <input id="b-port" class="input mono num" type="text" value="3306" placeholder="3306">
+                </div>
+                <div class="field c6">
+                  <label for="b-database">Database</label>
+                  <input id="b-database" class="input" type="text" placeholder="app_prod">
+                </div>
+                <div class="field c6">
+                  <label for="b-schema">Schema (optional)</label>
+                  <input id="b-schema" class="input" type="text" placeholder="All or public">
+                </div>
+                <div class="field c4">
+                  <label for="b-user">User</label>
+                  <input id="b-user" class="input" type="text" value="root" autocomplete="off">
+                </div>
+                <div class="field c4">
+                  <label for="b-password">Password</label>
+                  <div class="pw-wrap">
+                    <input id="b-password" class="input" type="password" placeholder="Optional" autocomplete="new-password">
+                    <button type="button" class="pw-toggle" data-pw-target="b-password" aria-label="Toggle password B visibility">
+                      <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="field c4">
+                  <label for="b-ssl">TLS / SSL</label>
+                  <select id="b-ssl" class="select">
+                    <option value="">Default</option>
+                    <option value="disable">Disable</option>
+                    <option value="require">Require</option>
+                    <option value="skip-verify">Skip Verify</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div id="dsn-panel-b" class="is-hidden">
+              <div class="form-grid">
+                <div class="field c12">
+                  <label for="b-dsn">Connection String (DSN)</label>
+                  <input id="b-dsn" class="input mono" type="text" placeholder="mysql://user:pass@127.0.0.1:3306/app_prod" autocomplete="off">
+                </div>
+                <div class="field c6">
+                  <label for="b-dsn-schema">Schema Filter</label>
+                  <input id="b-dsn-schema" class="input" type="text" placeholder="Optional">
+                </div>
+                <div class="field c6">
+                  <label for="b-label">Display Label</label>
+                  <input id="b-label" class="input" type="text" placeholder="Optional">
+                </div>
+              </div>
+            </div>
+
+            <div class="test-line" id="status-b">Idle</div>
+          </section>
+
+          <!-- Diff Options -->
+          <section class="conn-block" aria-label="Diff options" style="border-bottom:0;">
+            <div class="form-grid">
+              <div class="field c8">
+                <label for="opt-ignore">Ignore tables (glob)</label>
+                <input id="opt-ignore" class="input mono" type="text" placeholder="temp_*, audit_*">
+              </div>
+              <div class="field c4">
+                <label for="opt-timeout">Timeout</label>
+                <select id="opt-timeout" class="select">
+                  <option value="15">15s</option>
+                  <option value="30" selected>30s</option>
+                  <option value="60">60s</option>
+                  <option value="120">120s</option>
+                </select>
+              </div>
+            </div>
+            <div class="check-row">
+              <label class="check-label">
+                <input type="checkbox" id="opt-strict-case">
+                Strict object casing
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <div class="rail-footer">
+          <div id="compare-error" class="rail-error is-hidden" role="alert"></div>
+          <button type="button" class="btn btn-cta" id="compare-btn">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3m8-18h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M12 3v18"></path></svg>
+            <span id="compare-btn-label">Compare Schemas</span>
+          </button>
+          <div class="rail-note">Catalog queries only · Credentials stay in memory</div>
+        </div>
+      </aside>
+
+      <!-- Right Studio Stage -->
+      <main class="stage">
+        <!-- Welcome State (shown before first comparison) -->
+        <section id="welcome-view" class="welcome" aria-label="Studio workspace overview">
+          <div class="welcome-hero">
+            <div class="welcome-copy">
+              <p class="welcome-title">Inspect structural schema drift across databases</p>
+              <p class="welcome-sub">
+                Enter connection details for Source A and Target B in the left inspector (or switch any side to raw DSN), test read-only catalog access, and run a structural diff in seconds.
+              </p>
+            </div>
+            <div class="welcome-actions">
+              <button type="button" class="btn btn-cta-inline" id="welcome-demo-btn">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                Load Sample Migration
+              </button>
+            </div>
+          </div>
+
+          <div class="steps-grid">
+            <div class="step-cell">
+              <span class="step-label">1. Connect Read-Only</span>
+              <p class="step-desc">Supports MySQL/MariaDB, PostgreSQL, and SQL Server. Reads only information_schema and sys catalogs.</p>
+            </div>
+            <div class="step-cell">
+              <span class="step-label">2. Cross-Engine Normalization</span>
+              <p class="step-desc">Maps equivalent column types automatically while catching length, precision, nullability, and default drift.</p>
+            </div>
+            <div class="step-cell">
+              <span class="step-label">3. Live Logs &amp; Export</span>
+              <p class="step-desc">Watch real-time Go execution logs in your terminal or bottom console drawer, and export standalone report.html.</p>
+            </div>
+          </div>
+
+          <div class="ref-block">
+            <div class="ref-head">
+              <h2 class="ref-title">Cross-Engine Canonical Normalization Reference</h2>
+              <span class="ref-meta">20+ type families · Zero false positives across engines</span>
+            </div>
+            <div class="ref-table-wrap">
+              <table class="ref-table">
+                <thead>
+                  <tr>
+                    <th>Canonical Type</th>
+                    <th>SQL Server</th>
+                    <th>PostgreSQL</th>
+                    <th>MySQL / MariaDB</th>
+                    <th>Comparison Rule</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="mono">string(n)</td>
+                    <td class="mono">nvarchar(n), varchar(n)</td>
+                    <td class="mono">character varying(n)</td>
+                    <td class="mono">varchar(n), char(n)</td>
+                    <td>Char length preserved (e.g. 50 != 100)</td>
+                  </tr>
+                  <tr>
+                    <td class="mono">text</td>
+                    <td class="mono">nvarchar(max), text</td>
+                    <td class="mono">text</td>
+                    <td class="mono">text, mediumtext, longtext</td>
+                    <td>Unbounded text normalized equal</td>
+                  </tr>
+                  <tr>
+                    <td class="mono">boolean</td>
+                    <td class="mono">bit</td>
+                    <td class="mono">boolean, bool</td>
+                    <td class="mono">tinyint(1), bit(1), boolean</td>
+                    <td>Normalized as boolean</td>
+                  </tr>
+                  <tr>
+                    <td class="mono">decimal(p,s)</td>
+                    <td class="mono">decimal, numeric, money</td>
+                    <td class="mono">numeric, decimal</td>
+                    <td class="mono">decimal, numeric</td>
+                    <td>Precision &amp; scale compared strictly</td>
+                  </tr>
+                  <tr>
+                    <td class="mono">timestamp / timestamptz</td>
+                    <td class="mono">datetime2 / datetimeoffset</td>
+                    <td class="mono">timestamp / timestamptz</td>
+                    <td class="mono">datetime / timestamp</td>
+                    <td>Zone-aware vs naive distinguished</td>
+                  </tr>
+                  <tr>
+                    <td class="mono">uuid / blob / json</td>
+                    <td class="mono">uniqueidentifier, varbinary(max)</td>
+                    <td class="mono">uuid, bytea, jsonb</td>
+                    <td class="mono">uuid, blob, json</td>
+                    <td>Engine-specific types flagged unmapped</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Active Diff Studio View -->
+        <section id="diff-stage" class="diff-stage is-hidden" aria-label="Schema comparison results"></section>
+      </main>
+    </div>
+
+    <!-- Collapsible Bottom Go Server Log Console -->
+    <section class="console-dock" aria-label="Go server logs console">
+      <div class="console-bar" id="console-toggle-bar">
+        <div class="console-title">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+          <span>Go Server Console</span>
+          <span id="console-preview" class="console-preview">Waiting for activity...</span>
+        </div>
+        <div class="console-controls">
+          <button type="button" class="btn btn-xs" id="refresh-logs-btn">Refresh</button>
+          <button type="button" class="btn btn-xs" id="clear-logs-btn">Clear</button>
+          <span id="console-chevron-label" class="note-muted">Show</span>
+        </div>
+      </div>
+      <div id="console-body" class="console-body is-hidden"></div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var themeBtns = Array.prototype.slice.call(document.querySelectorAll('[data-theme-choice]'));
+      var state = {
+        mode: { a: 'form', b: 'form' },
+        engine: { a: 'mysql', b: 'mysql' },
+        defaultPorts: { mysql: '3306', postgres: '5432', mssql: '1433' },
+        lastReport: null,
+        lastMarkdown: '',
+        activeFilter: 'all',
+        showUnchangedCols: false,
+        showIdenticalTables: true,
+        consoleOpen: false,
+        railOpen: true
+      };
+
+      function setTheme(choice) {
+        if (choice === 'light' || choice === 'dark') {
+          root.setAttribute('data-theme', choice);
+        } else {
+          root.removeAttribute('data-theme');
+        }
+        themeBtns.forEach(function (b) {
+          b.classList.toggle('is-active', b.getAttribute('data-theme-choice') === choice);
+        });
+        try { localStorage.setItem('schema-drift-theme', choice); } catch (_) {}
+      }
+
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var urlTheme = params.get('theme');
+        var saved = urlTheme || localStorage.getItem('schema-drift-theme');
+        if (saved === 'light' || saved === 'dark' || saved === 'auto') setTheme(saved);
+      } catch (_) {}
+
+      themeBtns.forEach(function (b) {
+        b.addEventListener('click', function () { setTheme(b.getAttribute('data-theme-choice')); });
+      });
+
+      // Console drawer toggle
+      function setConsoleOpen(open) {
+        state.consoleOpen = open;
+        document.getElementById('console-body').classList.toggle('is-hidden', !open);
+        document.getElementById('console-chevron-label').textContent = open ? 'Hide' : 'Show';
+        document.getElementById('toggle-console-btn').classList.toggle('is-active', open);
+        if (open) {
+          var body = document.getElementById('console-body');
+          body.scrollTop = body.scrollHeight;
+        }
+      }
+
+      document.getElementById('console-toggle-bar').addEventListener('click', function (e) {
+        if (e.target.closest('button')) return;
+        setConsoleOpen(!state.consoleOpen);
+      });
+      document.getElementById('toggle-console-btn').addEventListener('click', function () {
+        setConsoleOpen(!state.consoleOpen);
+        refreshLogs();
+      });
+
+      function refreshLogs() {
+        fetch('/api/logs')
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (!data || !data.ok) return;
+            renderLogs(data.logs || []);
+          })
+          .catch(function () {});
+      }
+
+      function renderLogs(logs) {
+        var body = document.getElementById('console-body');
+        var badge = document.getElementById('log-count-badge');
+        var preview = document.getElementById('console-preview');
+        badge.textContent = '(' + logs.length + ')';
+        if (logs.length === 0) {
+          preview.textContent = 'No events yet';
+          body.innerHTML = '';
+          body.appendChild(el('div', 'note-muted', 'Run Test Connection, Sample Diff, or Compare Schemas to stream Go logs here.'));
+          return;
+        }
+        var last = logs[logs.length - 1];
+        preview.textContent = last.timestamp + ' [' + last.scope + '] ' + last.message;
+        body.innerHTML = '';
+        logs.forEach(function (entry) {
+          var row = el('div', 'log-row');
+          row.appendChild(el('span', 'log-ts', entry.timestamp));
+          row.appendChild(el('span', 'log-lvl is-' + entry.level, entry.level));
+          row.appendChild(el('span', 'log-scope', '[' + entry.scope + ']'));
+          row.appendChild(el('span', 'log-msg', entry.message));
+          body.appendChild(row);
+        });
+        body.scrollTop = body.scrollHeight;
+      }
+
+      document.getElementById('refresh-logs-btn').addEventListener('click', function () { refreshLogs(); });
+      document.getElementById('clear-logs-btn').addEventListener('click', function () {
+        fetch('/api/logs', { method: 'DELETE' }).then(refreshLogs);
+      });
+
+      // Rail toggle when reviewing diff
+      document.getElementById('toggle-rail-btn').addEventListener('click', function () {
+        state.railOpen = !state.railOpen;
+        document.getElementById('conn-rail').classList.toggle('is-hidden', !state.railOpen);
+        document.getElementById('toggle-rail-btn').classList.toggle('is-active', state.railOpen);
+      });
+
+      // Mode switch
+      document.querySelectorAll('[data-mode-btn]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var side = btn.getAttribute('data-mode-btn');
+          var mode = btn.getAttribute('data-mode');
+          state.mode[side] = mode;
+          document.querySelectorAll('[data-mode-btn="' + side + '"]').forEach(function (b) {
+            b.classList.toggle('is-active', b.getAttribute('data-mode') === mode);
+          });
+          document.getElementById('form-panel-' + side).classList.toggle('is-hidden', mode !== 'form');
+          document.getElementById('dsn-panel-' + side).classList.toggle('is-hidden', mode !== 'dsn');
+        });
+      });
+
+      // Engine switch
+      function setSideEngine(side, eng) {
+        var prevDefault = state.defaultPorts[state.engine[side]];
+        state.engine[side] = eng;
+        document.querySelectorAll('[data-eng-btn="' + side + '"]').forEach(function (b) {
+          b.classList.toggle('is-active', b.getAttribute('data-engine') === eng);
+        });
+        var portEl = document.getElementById(side + '-port');
+        if (!portEl.value || portEl.value === prevDefault) portEl.value = state.defaultPorts[eng];
+        portEl.placeholder = state.defaultPorts[eng];
+        var userEl = document.getElementById(side + '-user');
+        if (eng === 'mysql' && (userEl.value === 'postgres' || userEl.value === 'sa')) userEl.value = 'root';
+        if (eng === 'postgres' && (userEl.value === 'root' || userEl.value === 'sa')) userEl.value = 'postgres';
+        if (eng === 'mssql' && (userEl.value === 'root' || userEl.value === 'postgres')) userEl.value = 'sa';
+      }
+
+      document.querySelectorAll('[data-eng-btn]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setSideEngine(btn.getAttribute('data-eng-btn'), btn.getAttribute('data-engine'));
+        });
+      });
+
+      document.querySelectorAll('[data-pw-target]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var inp = document.getElementById(btn.getAttribute('data-pw-target'));
+          if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
+        });
+      });
+
+      function readEndpoint(side) {
+        if (state.mode[side] === 'dsn') {
+          return {
+            mode: 'dsn',
+            dsn: document.getElementById(side + '-dsn').value,
+            schema: document.getElementById(side + '-dsn-schema').value,
+            label: document.getElementById(side + '-label').value
+          };
+        }
+        return {
+          mode: 'form',
+          engine: state.engine[side],
+          host: document.getElementById(side + '-host').value,
+          port: document.getElementById(side + '-port').value,
+          database: document.getElementById(side + '-database').value,
+          schema: document.getElementById(side + '-schema').value,
+          user: document.getElementById(side + '-user').value,
+          password: document.getElementById(side + '-password').value,
+          sslMode: document.getElementById(side + '-ssl').value
+        };
+      }
+
+      document.getElementById('swap-btn').addEventListener('click', function () {
+        ['host', 'port', 'database', 'schema', 'user', 'password', 'ssl', 'dsn', 'dsn-schema', 'label'].forEach(function (f) {
+          var a = document.getElementById('a-' + f);
+          var b = document.getElementById('b-' + f);
+          var t = a.value; a.value = b.value; b.value = t;
+        });
+        var engA = state.engine.a, engB = state.engine.b;
+        setSideEngine('a', engB);
+        setSideEngine('b', engA);
+        var modeA = state.mode.a, modeB = state.mode.b;
+        document.querySelector('[data-mode-btn="a"][data-mode="' + modeB + '"]').click();
+        document.querySelector('[data-mode-btn="b"][data-mode="' + modeA + '"]').click();
+      });
+
+      function runTestConnection(side) {
+        var btn = document.getElementById('test-' + side + '-btn');
+        var st = document.getElementById('status-' + side);
+        btn.disabled = true;
+        btn.textContent = '...';
+        st.className = 'test-line';
+        st.textContent = 'Testing read-only connection...';
+
+        fetch('/api/test-connection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            side: side === 'a' ? 'Source A' : 'Target B',
+            endpoint: readEndpoint(side),
+            timeoutSec: parseInt(document.getElementById('opt-timeout').value, 10) || 30
+          })
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.ok) {
+              st.className = 'test-line is-ok';
+              st.textContent = 'Connected (' + data.engineName + ') · ' + data.tablesRead + ' tables (' + data.durationMs + 'ms)';
+            } else {
+              st.className = 'test-line is-err';
+              st.textContent = data.error || 'Connection failed';
+            }
+            refreshLogs();
+          })
+          .catch(function (err) {
+            st.className = 'test-line is-err';
+            st.textContent = 'Network error: ' + err.message;
+          })
+          .finally(function () {
+            btn.disabled = false;
+            btn.textContent = 'Test';
+          });
+      }
+
+      document.getElementById('test-a-btn').addEventListener('click', function () { runTestConnection('a'); });
+      document.getElementById('test-b-btn').addEventListener('click', function () { runTestConnection('b'); });
+
+      function setRailError(msg) {
+        var elErr = document.getElementById('compare-error');
+        if (!msg) {
+          elErr.classList.add('is-hidden');
+          elErr.textContent = '';
+          return;
+        }
+        elErr.textContent = msg;
+        elErr.classList.remove('is-hidden');
+      }
+
+      function runCompare() {
+        var btn = document.getElementById('compare-btn');
+        var lbl = document.getElementById('compare-btn-label');
+        setRailError('');
+        btn.disabled = true;
+        lbl.textContent = 'Comparing...';
+
+        fetch('/api/compare', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceA: readEndpoint('a'),
+            sourceB: readEndpoint('b'),
+            ignore: document.getElementById('opt-ignore').value,
+            strictCase: document.getElementById('opt-strict-case').checked,
+            timeoutSec: parseInt(document.getElementById('opt-timeout').value, 10) || 30
+          })
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            refreshLogs();
+            if (!data.ok) {
+              setRailError(data.error || 'Comparison failed');
+              return;
+            }
+            renderCompareResult(data);
+          })
+          .catch(function (err) {
+            setRailError('Request failed: ' + err.message);
+          })
+          .finally(function () {
+            btn.disabled = false;
+            lbl.textContent = 'Compare Schemas';
+          });
+      }
+
+      function runDemo() {
+        setRailError('');
+        fetch('/api/demo', { method: 'POST' })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            refreshLogs();
+            if (!data.ok) {
+              setRailError(data.error || 'Failed to load sample diff');
+              return;
+            }
+            renderCompareResult(data);
+          })
+          .catch(function (err) {
+            setRailError('Request failed: ' + err.message);
+          });
+      }
+
+      document.getElementById('compare-btn').addEventListener('click', runCompare);
+      document.getElementById('load-demo-btn').addEventListener('click', runDemo);
+      document.getElementById('welcome-demo-btn').addEventListener('click', runDemo);
+
+      // Safe DOM builders
+      function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined && text !== null) node.textContent = String(text);
+        return node;
+      }
+
+      function makeSVG(dList, extraAttrs) {
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', (extraAttrs && extraAttrs.cls) || 'icon');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        dList.forEach(function (d) {
+          var p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          p.setAttribute('d', d);
+          svg.appendChild(p);
+        });
+        return svg;
+      }
+
+      function dotClassForStatus(status) {
+        if (status === 'only_a') return 'dot-a';
+        if (status === 'only_b') return 'dot-b';
+        if (status === 'modified') return 'dot-mod';
+        return 'dot-eq';
+      }
+
+      function tableSearchText(t) {
+        var parts = [t.name, t.nameA || '', t.nameB || '', t.schemaA || '', t.schemaB || ''];
+        (t.columns || []).forEach(function (c) {
+          parts.push(c.nameA || '', c.nameB || '');
+          if (c.colA) parts.push(c.colA.rawType || '', c.colA.canonicalType || '');
+          if (c.colB) parts.push(c.colB.rawType || '', c.colB.canonicalType || '');
+        });
+        return parts.join(' ').toLowerCase();
+      }
+
+      function renderCompareResult(data) {
+        state.lastReport = data.report;
+        state.lastMarkdown = data.markdownSummary || '';
+        state.activeFilter = 'all';
+
+        var rep = data.report;
+        var s = rep.summary;
+
+        document.getElementById('welcome-view').classList.add('is-hidden');
+        document.getElementById('toggle-rail-btn').classList.remove('is-hidden');
+        document.getElementById('toggle-rail-btn').classList.toggle('is-active', state.railOpen);
+
+        var crumb = document.getElementById('topbar-crumb');
+        crumb.textContent = rep.sourceA.engineName + ' -> ' + rep.sourceB.engineName;
+        crumb.classList.remove('is-hidden');
+
+        var stage = document.getElementById('diff-stage');
+        stage.innerHTML = '';
+        stage.classList.remove('is-hidden');
+
+        // 1. Flush Summary Bar
+        var bar = el('div', 'diff-summary-bar');
+        var topRow = el('div', 'diff-bar-top');
+
+        var statusGroup = el('div', 'diff-status-group');
+        statusGroup.appendChild(el('span', 'status-pill ' + (s.hasDrift ? 'is-drift' : 'is-ok'), s.hasDrift ? 'Drift Detected' : 'Schemas Identical'));
+        var epSum = el('div', 'ep-summary');
+        epSum.appendChild(el('span', '', 'A: ' + rep.sourceA.label + ' (' + s.tablesReadA + ')'));
+        epSum.appendChild(el('span', 'note-muted', '->'));
+        epSum.appendChild(el('span', '', 'B: ' + rep.sourceB.label + ' (' + s.tablesReadB + ')'));
+        if (rep.durationDisplay) epSum.appendChild(el('span', 'note-muted num', '· ' + rep.durationDisplay));
+        statusGroup.appendChild(epSum);
+        topRow.appendChild(statusGroup);
+
+        var actions = el('div', 'diff-actions');
+        var copyBtn = el('button', 'btn');
+        copyBtn.type = 'button'; copyBtn.id = 'copy-md-btn';
+        copyBtn.textContent = 'Copy Markdown';
+        actions.appendChild(copyBtn);
+
+        var dlLink = el('a', 'btn btn-cta-inline');
+        dlLink.style.height = '30px';
+        dlLink.href = '/api/reports/' + encodeURIComponent(data.reportId) + '/download';
+        dlLink.setAttribute('download', 'schema-drift-report.html');
+        dlLink.textContent = 'Export report.html';
+        actions.appendChild(dlLink);
+        topRow.appendChild(actions);
+        bar.appendChild(topRow);
+
+        var metricRow = el('div', 'diff-bar-metrics');
+        var filterStrip = el('div', 'filter-strip');
+        var totalDrifted = s.tablesOnlyA + s.tablesOnlyB + s.tablesModified;
+        var tabs = [
+          ['all', 'All', rep.tables.length, ''],
+          ['drifted', 'Drifted', totalDrifted, ''],
+          ['only_a', '+ Only A', s.tablesOnlyA, 'dot-a'],
+          ['only_b', '- Only B', s.tablesOnlyB, 'dot-b'],
+          ['modified', '~ Modified', s.tablesModified, 'dot-mod'],
+          ['identical', '= Identical', s.tablesIdentical, 'dot-eq']
+        ];
+        if (s.unmappedCount > 0) tabs.push(['unmapped', 'Unmapped', s.unmappedCount, '']);
+
+        tabs.forEach(function (t) {
+          var b = el('button', 'filter-tab' + (t[0] === 'all' ? ' is-active' : ''));
+          b.type = 'button';
+          b.setAttribute('data-filter', t[0]);
+          if (t[3]) b.appendChild(el('span', 'dot ' + t[3]));
+          b.appendChild(document.createTextNode(t[1] + ' '));
+          b.appendChild(el('span', 'num', t[2]));
+          filterStrip.appendChild(b);
+        });
+        metricRow.appendChild(filterStrip);
+
+        var parity = el('div', 'parity-wrap num');
+        parity.appendChild(el('span', '', rep.parityPercent + '% parity'));
+        var spec = el('div', 'spectrum-bar');
+        var total = rep.tables.length || 1;
+        if (s.tablesOnlyA > 0) { var sa = el('div', 'seg-a'); sa.style.width = (s.tablesOnlyA * 100 / total).toFixed(2) + '%'; spec.appendChild(sa); }
+        if (s.tablesOnlyB > 0) { var sb = el('div', 'seg-b'); sb.style.width = (s.tablesOnlyB * 100 / total).toFixed(2) + '%'; spec.appendChild(sb); }
+        if (s.tablesModified > 0) { var sm = el('div', 'seg-mod'); sm.style.width = (s.tablesModified * 100 / total).toFixed(2) + '%'; spec.appendChild(sm); }
+        if (s.tablesIdentical > 0) { var se = el('div', 'seg-eq'); se.style.width = (s.tablesIdentical * 100 / total).toFixed(2) + '%'; spec.appendChild(se); }
+        parity.appendChild(spec);
+        metricRow.appendChild(parity);
+        bar.appendChild(metricRow);
+        stage.appendChild(bar);
+
+        // 2. Master-Detail Diff Split
+        var split = el('div', 'diff-split');
+
+        // Left Tree
+        var tree = el('aside', 'table-tree');
+        var swrap = el('div', 'tree-search-wrap');
+        var sIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        sIcon.setAttribute('class', 'icon tree-search-icon');
+        sIcon.setAttribute('viewBox', '0 0 24 24');
+        var cNode = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        cNode.setAttribute('cx', '11'); cNode.setAttribute('cy', '11'); cNode.setAttribute('r', '8');
+        var pNode = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pNode.setAttribute('d', 'm21 21-4.3-4.3');
+        sIcon.appendChild(cNode); sIcon.appendChild(pNode);
+        swrap.appendChild(sIcon);
+
+        var sinp = el('input', 'tree-search');
+        sinp.type = 'search'; sinp.id = 'table-search';
+        sinp.placeholder = 'Filter tables or columns...';
+        sinp.setAttribute('aria-label', 'Filter tables or columns');
+        swrap.appendChild(sinp);
+        swrap.appendChild(el('span', 'tree-kbd', '/'));
+        tree.appendChild(swrap);
+
+        var treeList = el('nav', 'tree-list');
+        rep.tables.forEach(function (t) {
+          var a = el('a', 'tree-item');
+          a.href = '#' + t.anchorId;
+          a.setAttribute('data-anchor', t.anchorId);
+          a.setAttribute('data-status', t.status);
+          a.setAttribute('data-unmapped', t.unmappedCount > 0 ? '1' : '0');
+          a.setAttribute('data-search', tableSearchText(t));
+
+          var left = el('span', 'tree-left');
+          left.appendChild(el('span', 'dot ' + dotClassForStatus(t.status)));
+          left.appendChild(el('span', 'tree-name', t.name));
+          a.appendChild(left);
+
+          var cnt = el('span', 'tree-counts num');
+          if (t.status === 'only_a') cnt.appendChild(el('span', 'c-a', '+' + t.totalCols));
+          if (t.status === 'only_b') cnt.appendChild(el('span', 'c-b', '-' + t.totalCols));
+          if (t.status === 'modified') {
+            if (t.onlyACols > 0) cnt.appendChild(el('span', 'c-a', '+' + t.onlyACols));
+            if (t.onlyBCols > 0) cnt.appendChild(el('span', 'c-b', '-' + t.onlyBCols));
+            if (t.modifiedCols > 0) cnt.appendChild(el('span', 'c-mod', '~' + t.modifiedCols));
+          }
+          a.appendChild(cnt);
+          treeList.appendChild(a);
+        });
+        tree.appendChild(treeList);
+        split.appendChild(tree);
+
+        // Right Inspector
+        var insp = el('div', 'diff-inspector');
+        var tb = el('div', 'inspector-toolbar');
+        var vCount = el('div', 'toolbar-left', 'Showing ' + rep.tables.length + ' of ' + rep.tables.length + ' tables');
+        vCount.id = 'visible-counter';
+        tb.appendChild(vCount);
+
+        var tbRight = el('div', 'toolbar-right');
+        var lCols = el('label', 'check-label');
+        var cbCols = document.createElement('input'); cbCols.type = 'checkbox'; cbCols.id = 'toggle-unchanged-cols'; cbCols.checked = state.showUnchangedCols;
+        lCols.appendChild(cbCols); lCols.appendChild(document.createTextNode('Show unchanged columns'));
+        tbRight.appendChild(lCols);
+
+        var lId = el('label', 'check-label');
+        var cbId = document.createElement('input'); cbId.type = 'checkbox'; cbId.id = 'toggle-identical-tables'; cbId.checked = state.showIdenticalTables;
+        lId.appendChild(cbId); lId.appendChild(document.createTextNode('Show identical tables'));
+        tbRight.appendChild(lId);
+
+        var expBtn = el('button', 'btn btn-xs', 'Expand All'); expBtn.type = 'button'; expBtn.id = 'expand-all-btn';
+        var colBtn = el('button', 'btn btn-xs', 'Collapse All'); colBtn.type = 'button'; colBtn.id = 'collapse-all-btn';
+        tbRight.appendChild(expBtn); tbRight.appendChild(colBtn);
+        tb.appendChild(tbRight);
+        insp.appendChild(tb);
+
+        if (rep.tables.length === 0) {
+          var emp = el('div', 'empty-state');
+          emp.appendChild(el('p', '', 'Both databases returned zero non-ignored tables.'));
+          insp.appendChild(emp);
+        } else {
+          rep.tables.forEach(function (t, idx) {
+            var card = document.createElement('details');
+            card.id = t.anchorId;
+            card.className = 'tbl-card';
+            card.setAttribute('data-status', t.status);
+            card.setAttribute('data-unmapped', t.unmappedCount > 0 ? '1' : '0');
+            card.setAttribute('data-search', tableSearchText(t));
+            if (t.status !== 'identical' && (rep.tables.length <= 100 || idx < 60)) card.open = true;
+
+            var sum = document.createElement('summary');
+            sum.className = 'tbl-summary';
+            var tg = el('div', 'tbl-title-group');
+            tg.appendChild(makeSVG(['m9 18 6-6-6-6'], { cls: 'icon chevron' }));
+            tg.appendChild(el('span', 'badge badge-' + t.status, t.statusLabel));
+            tg.appendChild(el('h2', 'tbl-name', t.name));
+
+            if (t.schemaA && t.schemaB && t.schemaA !== t.schemaB) {
+              tg.appendChild(el('span', 'tbl-origin', t.schemaA + '.' + t.nameA + ' vs ' + t.schemaB + '.' + t.nameB));
+            } else if (t.schemaA && t.status === 'only_a') {
+              tg.appendChild(el('span', 'tbl-origin', t.schemaA + '.' + t.nameA));
+            } else if (t.schemaB && t.status === 'only_b') {
+              tg.appendChild(el('span', 'tbl-origin', t.schemaB + '.' + t.nameB));
+            }
+            if (t.caseDiff) tg.appendChild(el('span', 'badge badge-case', 'Case: ' + t.nameA + ' / ' + t.nameB));
+            if (t.unmappedCount > 0) tg.appendChild(el('span', 'badge badge-unmapped num', t.unmappedCount + ' unmapped'));
+            sum.appendChild(tg);
+
+            var met = el('div', 'tbl-metrics num');
+            if (t.status === 'only_a') met.appendChild(el('span', 'c-a', '+' + t.totalCols + ' cols'));
+            else if (t.status === 'only_b') met.appendChild(el('span', 'c-b', '-' + t.totalCols + ' cols'));
+            else if (t.status === 'modified') {
+              if (t.onlyACols > 0) met.appendChild(el('span', 'c-a', '+' + t.onlyACols));
+              if (t.onlyBCols > 0) met.appendChild(el('span', 'c-b', '-' + t.onlyBCols));
+              if (t.modifiedCols > 0) met.appendChild(el('span', 'c-mod', '~' + t.modifiedCols));
+              if (t.identicalCols > 0) met.appendChild(el('span', 'note-muted', '=' + t.identicalCols));
+            } else {
+              met.appendChild(el('span', 'note-muted', t.totalCols + ' cols'));
+            }
+            sum.appendChild(met);
+            card.appendChild(sum);
+
+            if (!t.columns || t.columns.length === 0) {
+              card.appendChild(el('div', 'tbl-foot-note', 'This table has zero columns reported in metadata.'));
+            } else {
+              card.appendChild(buildColumnMatrix(t, rep));
+              if (t.status === 'modified' && t.identicalCols > 0) {
+                var foot = el('div', 'tbl-foot-note unchanged-hint');
+                foot.appendChild(el('span', 'num', t.identicalCols + ' unchanged column(s) hidden.'));
+                var revBtn = el('button', 'btn btn-xs reveal-cols-btn', 'Show all columns');
+                revBtn.type = 'button';
+                foot.appendChild(revBtn);
+                card.appendChild(foot);
+              }
+            }
+            insp.appendChild(card);
+          });
+        }
+
+        var noMatches = el('div', 'empty-state is-hidden');
+        noMatches.id = 'no-filter-matches';
+        noMatches.appendChild(el('p', '', 'No tables match your active search or status filter.'));
+        var rstBtn = el('button', 'btn', 'Reset filters'); rstBtn.type = 'button'; rstBtn.id = 'reset-filters-btn';
+        noMatches.appendChild(rstBtn);
+        insp.appendChild(noMatches);
+
+        split.appendChild(insp);
+        stage.appendChild(split);
+
+        wireStageEvents(rep);
+      }
+
+      function buildColumnMatrix(t, rep) {
+        var wrap = el('div', 'table-scroll');
+        var tbl = el('table', 'col-table');
+        var thead = document.createElement('thead');
+        var hrow = document.createElement('tr');
+        ['Column', 'Status', 'Source A (' + rep.sourceA.engineName + ')', 'Target B (' + rep.sourceB.engineName + ')', 'Changes & Notices'].forEach(function (h) {
+          hrow.appendChild(el('th', '', h));
+        });
+        thead.appendChild(hrow);
+        tbl.appendChild(thead);
+
+        var tbody = document.createElement('tbody');
+        t.columns.forEach(function (c) {
+          var tr = el('tr', 'col-row');
+          tr.setAttribute('data-col-status', c.status);
+
+          var tdName = document.createElement('td');
+          tdName.appendChild(el('div', 'col-name', c.name));
+          if (c.caseDiff) {
+            var cw = document.createElement('div');
+            cw.style.marginTop = '4px';
+            cw.appendChild(el('span', 'badge badge-case', c.nameA + ' / ' + c.nameB));
+            tdName.appendChild(cw);
+          }
+          tr.appendChild(tdName);
+
+          var tdStatus = document.createElement('td');
+          tdStatus.appendChild(el('span', 'badge badge-' + c.status, c.statusLabel));
+          tr.appendChild(tdStatus);
+
+          var tdA = document.createElement('td');
+          if (c.colA) tdA.appendChild(renderSideCell(c.colA));
+          else tdA.appendChild(el('span', 'empty-cell', 'not in A'));
+          tr.appendChild(tdA);
+
+          var tdB = document.createElement('td');
+          if (c.colB) tdB.appendChild(renderSideCell(c.colB));
+          else tdB.appendChild(el('span', 'empty-cell', 'not in B'));
+          tr.appendChild(tdB);
+
+          var tdDiff = document.createElement('td');
+          var pills = el('div', 'diff-pills');
+          var diffs = c.diffs || [];
+          diffs.forEach(function (d) {
+            var box = el('span', 'attr-diff');
+            box.appendChild(el('span', 'attr-field', d.field + ':'));
+            box.appendChild(el('span', 'attr-val', d.valueA + ' -> ' + d.valueB));
+            pills.appendChild(box);
+          });
+          if (c.unmapped) pills.appendChild(el('span', 'badge badge-unmapped', 'unmapped type'));
+          if (c.crossEngineDefaultSkipped) pills.appendChild(el('span', 'note-muted', 'Cross-engine defaults differ; presence matches.'));
+          if (diffs.length === 0 && !c.unmapped && !c.crossEngineDefaultSkipped) {
+            if (c.status === 'only_a') pills.appendChild(el('span', 'note-muted', 'Missing in B'));
+            else if (c.status === 'only_b') pills.appendChild(el('span', 'note-muted', 'Missing in A'));
+            else pills.appendChild(el('span', 'note-muted', 'No changes'));
+          }
+          tdDiff.appendChild(pills);
+          tr.appendChild(tdDiff);
+          tbody.appendChild(tr);
+        });
+        tbl.appendChild(tbody);
+        wrap.appendChild(tbl);
+        return wrap;
+      }
+
+      function renderSideCell(side) {
+        var stack = el('div', 'type-stack');
+        stack.appendChild(el('span', 'type-raw', side.rawType));
+        var meta = el('div', 'type-meta');
+        meta.appendChild(el('span', 'canon-tag', side.canonicalType));
+        meta.appendChild(el('span', 'null-tag', side.nullable));
+        if (side.defaultExpr) meta.appendChild(el('code', 'def-code', 'DEFAULT ' + side.defaultExpr));
+        stack.appendChild(meta);
+        return stack;
+      }
+
+      function wireStageEvents(rep) {
+        var searchInput = document.getElementById('table-search');
+        var filterTabs = Array.prototype.slice.call(document.querySelectorAll('.filter-tab[data-filter]'));
+        var toggleUnchanged = document.getElementById('toggle-unchanged-cols');
+        var toggleIdentical = document.getElementById('toggle-identical-tables');
+        var expandAllBtn = document.getElementById('expand-all-btn');
+        var collapseAllBtn = document.getElementById('collapse-all-btn');
+        var copyBtn = document.getElementById('copy-md-btn');
+        var resetBtn = document.getElementById('reset-filters-btn');
+        var emptyMsg = document.getElementById('no-filter-matches');
+        var counterEl = document.getElementById('visible-counter');
+        var tableCards = Array.prototype.slice.call(document.querySelectorAll('.tbl-card'));
+        var treeItems = Array.prototype.slice.call(document.querySelectorAll('.tree-item'));
+
+        function matchesStatus(node, filter) {
+          var status = node.getAttribute('data-status');
+          var unmapped = node.getAttribute('data-unmapped') === '1';
+          if (filter === 'all') {
+            if (toggleIdentical && !toggleIdentical.checked && status === 'identical') return false;
+            return true;
+          }
+          if (filter === 'drifted') return status === 'only_a' || status === 'only_b' || status === 'modified';
+          if (filter === 'unmapped') return unmapped;
+          return status === filter;
+        }
+
+        function applyFilters() {
+          var q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+          var visible = 0;
+          tableCards.forEach(function (card) {
+            var hay = card.getAttribute('data-search') || '';
+            var show = matchesStatus(card, state.activeFilter) && (q === '' || hay.indexOf(q) !== -1);
+            card.classList.toggle('is-hidden', !show);
+            if (show) visible++;
+          });
+          treeItems.forEach(function (item) {
+            var hay = item.getAttribute('data-search') || '';
+            item.classList.toggle('is-hidden', !(matchesStatus(item, state.activeFilter) && (q === '' || hay.indexOf(q) !== -1)));
+          });
+          if (counterEl) counterEl.textContent = 'Showing ' + visible + ' of ' + tableCards.length + ' tables';
+          if (emptyMsg && tableCards.length > 0) emptyMsg.classList.toggle('is-hidden', visible > 0);
+        }
+
+        function setFilter(next) {
+          state.activeFilter = next;
+          if (next === 'identical' && toggleIdentical && !toggleIdentical.checked) {
+            toggleIdentical.checked = true;
+            state.showIdenticalTables = true;
+          }
+          filterTabs.forEach(function (t) { t.classList.toggle('is-active', t.getAttribute('data-filter') === next); });
+          applyFilters();
+        }
+
+        filterTabs.forEach(function (t) {
+          t.addEventListener('click', function () { setFilter(t.getAttribute('data-filter')); });
+        });
+        if (searchInput) searchInput.addEventListener('input', applyFilters);
+        if (toggleUnchanged) toggleUnchanged.addEventListener('change', function () {
+          state.showUnchangedCols = toggleUnchanged.checked;
+          document.body.classList.toggle('show-unchanged-cols', toggleUnchanged.checked);
+        });
+        if (toggleIdentical) toggleIdentical.addEventListener('change', function () {
+          state.showIdenticalTables = toggleIdentical.checked;
+          applyFilters();
+        });
+        if (expandAllBtn) expandAllBtn.addEventListener('click', function () {
+          tableCards.forEach(function (c) { if (!c.classList.contains('is-hidden')) c.open = true; });
+        });
+        if (collapseAllBtn) collapseAllBtn.addEventListener('click', function () {
+          tableCards.forEach(function (c) { c.open = false; });
+        });
+        if (resetBtn) resetBtn.addEventListener('click', function () {
+          if (searchInput) searchInput.value = '';
+          if (toggleIdentical) { toggleIdentical.checked = true; state.showIdenticalTables = true; }
+          setFilter('all');
+        });
+        treeItems.forEach(function (item) {
+          item.addEventListener('click', function () {
+            var target = document.getElementById(item.getAttribute('data-anchor'));
+            if (target) target.open = true;
+          });
+        });
+        document.querySelectorAll('.reveal-cols-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (toggleUnchanged) {
+              toggleUnchanged.checked = true;
+              state.showUnchangedCols = true;
+              document.body.classList.add('show-unchanged-cols');
+            }
+          });
+        });
+        if (copyBtn) copyBtn.addEventListener('click', function () {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(state.lastMarkdown || '').then(ok, ok);
+          } else { ok(); }
+          function ok() {
+            copyBtn.classList.add('is-copied');
+            copyBtn.textContent = 'Copied!';
+            setTimeout(function () {
+              copyBtn.classList.remove('is-copied');
+              copyBtn.textContent = 'Copy Markdown';
+            }, 1500);
+          }
+        });
+
+        applyFilters();
+      }
+
+      // Keyboard shortcuts: Ctrl+Enter compares; '/' focuses search
+      document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          runCompare();
+          return;
+        }
+        var searchInput = document.getElementById('table-search');
+        if (!searchInput) return;
+        if (e.key === '/' && document.activeElement !== searchInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          var tag = document.activeElement ? document.activeElement.tagName : '';
+          if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+            e.preventDefault();
+            searchInput.focus();
+          }
+        } else if (e.key === 'Escape' && document.activeElement === searchInput) {
+          searchInput.value = '';
+          searchInput.dispatchEvent(new Event('input'));
+          searchInput.blur();
+        }
+      });
+
+      // Init logs and optional ?demo=1 preview
+      refreshLogs();
+      try {
+        var qp = new URLSearchParams(window.location.search);
+        if (qp.get('demo') === '1') {
+          setConsoleOpen(true);
+          runDemo();
+        }
+      } catch (_) {}
+    })();
+  </script>
+</body>
+</html>
