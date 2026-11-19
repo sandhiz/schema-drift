@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Run tests with race detector
+        run: go test -race -v ./...
+
+      - name: Check coverage (>= 80% on normalizer and diff)
+        run: |
+          go test -coverprofile=coverage.out ./internal/normalizer ./internal/diff
+          go tool cover -func=coverage.out
+          NORM_COV=$(go test -cover ./internal/normalizer | grep -oE '[0-9]+\.[0-9]+%' | tr -d '%')
+          DIFF_COV=$(go test -cover ./internal/diff | grep -oE '[0-9]+\.[0-9]+%' | tr -d '%')
+          echo "normalizer coverage: ${NORM_COV}%"
+          echo "diff coverage: ${DIFF_COV}%"
+          awk -v n="$NORM_COV" -v d="$DIFF_COV" 'BEGIN { if (n < 80 || d < 80) { print "Coverage below 80% threshold!"; exit 1 } }'
+
+      - name: Verify cross-platform pure-Go builds
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o dist/schema-drift-linux-amd64 ./cmd/schema-drift
+          GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o dist/schema-drift-darwin-arm64 ./cmd/schema-drift
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o dist/schema-drift-windows-amd64.exe ./cmd/schema-drift

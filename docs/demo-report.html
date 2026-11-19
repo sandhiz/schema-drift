@@ -1,0 +1,3958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>schema-drift · sqlserver://legacy-erp.prod:1433/CoreBilling vs postgres://aurora-v16.prod:5432/core_billing</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg-canvas: #ffffff;
+      --bg-surface: #fafafa;
+      --bg-subtle: #f4f4f5;
+      --bg-hover: #ececef;
+      --border: #e4e4e7;
+      --border-strong: #d4d4d8;
+      --ink-primary: #09090b;
+      --ink-secondary: #3f3f46;
+      --ink-muted: #52525b;
+      --accent: #111113;
+      --accent-soft: rgba(17, 17, 19, 0.08);
+
+      --a-ink: #15803d;
+      --a-bg: rgba(21, 128, 61, 0.08);
+      --a-border: rgba(21, 128, 61, 0.28);
+      --a-solid: #16a34a;
+
+      --b-ink: #b91c1c;
+      --b-bg: rgba(185, 28, 28, 0.08);
+      --b-border: rgba(185, 28, 28, 0.28);
+      --b-solid: #dc2626;
+
+      --mod-ink: #b45309;
+      --mod-bg: rgba(180, 83, 9, 0.09);
+      --mod-border: rgba(180, 83, 9, 0.30);
+      --mod-solid: #d97706;
+
+      --eq-ink: #52525b;
+      --eq-bg: rgba(113, 113, 122, 0.10);
+      --eq-border: rgba(113, 113, 122, 0.25);
+      --eq-solid: #a1a1aa;
+
+      --unmap-ink: #6d28d9;
+      --unmap-bg: rgba(109, 40, 217, 0.09);
+      --unmap-border: rgba(109, 40, 217, 0.28);
+
+      --case-ink: #0369a1;
+      --case-bg: rgba(3, 105, 161, 0.09);
+      --case-border: rgba(3, 105, 161, 0.28);
+
+      --shadow-sm: 0 1px 2px rgba(9, 9, 11, 0.04);
+      --shadow-md: 0 6px 18px rgba(9, 9, 11, 0.06);
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg-canvas: #09090b;
+        --bg-surface: #0e0e11;
+        --bg-subtle: #141418;
+        --bg-hover: #1d1d23;
+        --border: #24242c;
+        --border-strong: #34343f;
+        --ink-primary: #f4f4f5;
+        --ink-secondary: #d4d4d8;
+        --ink-muted: #a1a1aa;
+        --accent: #f4f4f5;
+        --accent-soft: rgba(244, 244, 245, 0.12);
+
+        --a-ink: #4ade80;
+        --a-bg: rgba(34, 197, 94, 0.11);
+        --a-border: rgba(74, 222, 128, 0.30);
+        --a-solid: #22c55e;
+
+        --b-ink: #f87171;
+        --b-bg: rgba(239, 68, 68, 0.11);
+        --b-border: rgba(248, 113, 113, 0.30);
+        --b-solid: #ef4444;
+
+        --mod-ink: #fbbf24;
+        --mod-bg: rgba(245, 158, 11, 0.12);
+        --mod-border: rgba(251, 191, 36, 0.30);
+        --mod-solid: #f59e0b;
+
+        --eq-ink: #a1a1aa;
+        --eq-bg: rgba(161, 161, 170, 0.10);
+        --eq-border: rgba(161, 161, 170, 0.24);
+        --eq-solid: #52525b;
+
+        --unmap-ink: #c4b5fd;
+        --unmap-bg: rgba(139, 92, 246, 0.14);
+        --unmap-border: rgba(167, 139, 250, 0.32);
+
+        --case-ink: #7dd3fc;
+        --case-bg: rgba(56, 189, 248, 0.12);
+        --case-border: rgba(125, 211, 252, 0.28);
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg-canvas: #09090b;
+      --bg-surface: #0e0e11;
+      --bg-subtle: #141418;
+      --bg-hover: #1d1d23;
+      --border: #24242c;
+      --border-strong: #34343f;
+      --ink-primary: #f4f4f5;
+      --ink-secondary: #d4d4d8;
+      --ink-muted: #a1a1aa;
+      --accent: #f4f4f5;
+      --accent-soft: rgba(244, 244, 245, 0.12);
+
+      --a-ink: #4ade80;
+      --a-bg: rgba(34, 197, 94, 0.11);
+      --a-border: rgba(74, 222, 128, 0.30);
+      --a-solid: #22c55e;
+
+      --b-ink: #f87171;
+      --b-bg: rgba(239, 68, 68, 0.11);
+      --b-border: rgba(248, 113, 113, 0.30);
+      --b-solid: #ef4444;
+
+      --mod-ink: #fbbf24;
+      --mod-bg: rgba(245, 158, 11, 0.12);
+      --mod-border: rgba(251, 191, 36, 0.30);
+      --mod-solid: #f59e0b;
+
+      --eq-ink: #a1a1aa;
+      --eq-bg: rgba(161, 161, 170, 0.10);
+      --eq-border: rgba(161, 161, 170, 0.24);
+      --eq-solid: #52525b;
+
+      --unmap-ink: #c4b5fd;
+      --unmap-bg: rgba(139, 92, 246, 0.14);
+      --unmap-border: rgba(167, 139, 250, 0.32);
+
+      --case-ink: #7dd3fc;
+      --case-bg: rgba(56, 189, 248, 0.12);
+      --case-border: rgba(125, 211, 252, 0.28);
+
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    ::selection {
+      background: var(--accent-soft);
+      color: var(--ink-primary);
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg-canvas);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      caret-color: var(--accent);
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-strong) transparent;
+    }
+    *::-webkit-scrollbar { width: 8px; height: 8px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    *::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .num { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); }
+
+    .icon {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+     
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .topbar-inner {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    @media (min-width: 1220px) {
+      .topbar-inner { flex-wrap: nowrap; }
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      color: var(--ink-primary);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .status-pill.is-drift {
+      background: var(--mod-bg);
+      color: var(--mod-ink);
+      border-color: var(--mod-border);
+    }
+
+    .status-pill.is-ok {
+      background: var(--a-bg);
+      color: var(--a-ink);
+      border-color: var(--a-border);
+    }
+
+    .endpoints {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1 1 auto;
+      justify-content: center;
+      min-width: 0;
+      max-width: 100%;
+      font-size: 12.5px;
+      color: var(--ink-secondary);
+    }
+
+    .endpoint-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px 9px;
+      max-width: 310px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .endpoint-side {
+      font-weight: 700;
+      font-size: 11px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--ink-primary);
+    }
+
+    .endpoint-engine {
+      font-weight: 600;
+      color: var(--ink-primary);
+      white-space: nowrap;
+    }
+
+    .endpoint-dsn {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .endpoint-count {
+      font-size: 11px;
+      color: var(--ink-muted);
+      white-space: nowrap;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 150ms ease, border-color 150ms ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--bg-subtle);
+      border-color: var(--border-strong);
+    }
+
+    .btn.is-copied {
+      color: var(--a-ink);
+      border-color: var(--a-border);
+      background: var(--a-bg);
+    }
+
+    .theme-group {
+      display: inline-flex;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+    }
+
+    .theme-btn {
+      border: 0;
+      background: transparent;
+      color: var(--ink-muted);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: color 150ms ease, background-color 150ms ease;
+    }
+
+    .theme-btn:hover { color: var(--ink-primary); }
+    .theme-btn.is-active {
+      background: var(--bg-surface);
+      color: var(--ink-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+     
+    .shell {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 18px 24px 48px;
+    }
+
+     
+    .ledger {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .ledger-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ledger-cell {
+      appearance: none;
+      border: 0;
+      border-right: 1px solid var(--border);
+      background: transparent;
+      padding: 14px 18px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: background-color 150ms ease;
+      font-family: var(--font-sans);
+    }
+
+    .ledger-cell:last-child { border-right: 0; }
+    .ledger-cell:hover { background: var(--bg-subtle); }
+    .ledger-cell.is-active { background: var(--accent-soft); }
+
+    .ledger-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+    }
+
+    .ledger-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .dot-a { background: var(--a-solid); }
+    .dot-b { background: var(--b-solid); }
+    .dot-mod { background: var(--mod-solid); }
+    .dot-eq { background: var(--eq-solid); }
+
+    .ledger-val {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--ink-primary);
+    }
+
+    .ledger-val.is-a { color: var(--a-ink); }
+    .ledger-val.is-b { color: var(--b-ink); }
+    .ledger-val.is-mod { color: var(--mod-ink); }
+
+    .ledger-sub {
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .ledger-footer {
+      padding: 10px 18px;
+      background: var(--bg-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--ink-secondary);
+    }
+
+    .spectrum-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 240px;
+      max-width: 480px;
+    }
+
+    .spectrum-bar {
+      flex: 1;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--border);
+      overflow: hidden;
+      display: flex;
+    }
+
+    .seg-a { background: var(--a-solid); height: 100%; }
+    .seg-b { background: var(--b-solid); height: 100%; }
+    .seg-mod { background: var(--mod-solid); height: 100%; }
+    .seg-eq { background: var(--eq-solid); height: 100%; opacity: 0.55; }
+
+    .notice-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .meta-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--ink-secondary);
+    }
+
+    .meta-tag.is-unmapped {
+      color: var(--unmap-ink);
+      background: var(--unmap-bg);
+      border-color: var(--unmap-border);
+    }
+
+    .meta-tag.is-case {
+      color: var(--case-ink);
+      background: var(--case-bg);
+      border-color: var(--case-border);
+    }
+
+     
+    .workbench {
+      display: grid;
+      grid-template-columns: 296px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 76px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 96px);
+      overflow: hidden;
+    }
+
+    .sidebar-controls {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      color: var(--ink-muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 7px 54px 7px 32px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      transition: border-color 150ms ease, background-color 150ms ease;
+    }
+
+    .search-input::placeholder { color: var(--ink-muted); }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: var(--bg-surface);
+    }
+
+    .kbd-hint {
+      position: absolute;
+      right: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-muted);
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      pointer-events: none;
+    }
+
+    .clear-search {
+      position: absolute;
+      right: 8px;
+      border: 0;
+      background: transparent;
+      color: var(--ink-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 11px;
+      display: none;
+    }
+    .clear-search:hover { color: var(--ink-primary); background: var(--bg-hover); }
+    .search-box.has-value .kbd-hint { display: none; }
+    .search-box.has-value .clear-search { display: inline-flex; }
+
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+      color: var(--ink-secondary);
+      font-family: var(--font-sans);
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+    }
+
+    .chip:hover {
+      background: var(--bg-hover);
+      color: var(--ink-primary);
+    }
+
+    .chip.is-active {
+      background: var(--ink-primary);
+      color: var(--bg-surface);
+      border-color: var(--ink-primary);
+    }
+
+    .nav-list {
+      overflow-y: auto;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 9px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--ink-primary);
+      font-size: 12.5px;
+      transition: background-color 120ms ease;
+    }
+
+    .nav-item:hover { background: var(--bg-subtle); }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .nav-name {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .nav-counts {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .c-a { color: var(--a-ink); }
+    .c-b { color: var(--b-ink); }
+    .c-mod { color: var(--mod-ink); }
+
+     
+    .canvas {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .canvas-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .canvas-count {
+      font-size: 13px;
+      color: var(--ink-secondary);
+      font-weight: 500;
+    }
+
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      color: var(--ink-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-label input {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+     
+    .tbl-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      min-width: 0;
+      max-width: 100%;
+      scroll-margin-top: 82px;
+    }
+
+    .tbl-card[data-status="only_a"] { border-color: var(--a-border); }
+    .tbl-card[data-status="only_b"] { border-color: var(--b-border); }
+    .tbl-card[data-status="modified"] { border-color: var(--mod-border); }
+
+    .tbl-summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--bg-surface);
+      transition: background-color 140ms ease;
+      user-select: none;
+    }
+
+    .tbl-summary::-webkit-details-marker { display: none; }
+    .tbl-summary:hover { background: var(--bg-subtle); }
+
+    .tbl-card[open] > .tbl-summary {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tbl-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .chevron {
+      transition: transform 150ms ease;
+      color: var(--ink-muted);
+    }
+    .tbl-card[open] .chevron { transform: rotate(90deg); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .badge-only_a { color: var(--a-ink); background: var(--a-bg); border-color: var(--a-border); }
+    .badge-only_b { color: var(--b-ink); background: var(--b-bg); border-color: var(--b-border); }
+    .badge-modified { color: var(--mod-ink); background: var(--mod-bg); border-color: var(--mod-border); }
+    .badge-identical { color: var(--eq-ink); background: var(--eq-bg); border-color: var(--eq-border); }
+    .badge-unmapped { color: var(--unmap-ink); background: var(--unmap-bg); border-color: var(--unmap-border); }
+    .badge-case { color: var(--case-ink); background: var(--case-bg); border-color: var(--case-border); }
+
+    .tbl-name {
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink-primary);
+      word-break: break-word;
+    }
+
+    .tbl-origin {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--ink-muted);
+    }
+
+    .tbl-metrics {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+     
+    .table-scroll {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .col-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    .col-table th {
+      text-align: left;
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink-muted);
+      background: var(--bg-subtle);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .col-table td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .col-table tr:last-child td { border-bottom: 0; }
+
+    .col-row[data-col-status="only_a"] td { background: var(--a-bg); }
+    .col-row[data-col-status="only_b"] td { background: var(--b-bg); }
+    .col-row[data-col-status="modified"] td { background: var(--mod-bg); }
+
+    body:not(.show-unchanged-cols) .tbl-card[data-status="modified"] .col-row[data-col-status="identical"] {
+      display: none;
+    }
+
+    .col-name {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--ink-primary);
+      white-space: nowrap;
+    }
+
+    .type-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .type-raw {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--ink-primary);
+    }
+
+    .type-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+    }
+
+    .canon-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      color: var(--ink-secondary);
+    }
+
+    .null-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-muted);
+    }
+
+    .def-code {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-secondary);
+      background: var(--bg-subtle);
+      padding: 1px 5px;
+      border-radius: 4px;
+      word-break: break-all;
+    }
+
+    .diff-pills {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .attr-diff {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--mod-border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      width: fit-content;
+    }
+
+    .attr-field {
+      font-weight: 700;
+      color: var(--mod-ink);
+      text-transform: capitalize;
+    }
+
+    .attr-val {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-primary);
+    }
+
+    .note-muted {
+      font-size: 11.5px;
+      color: var(--ink-muted);
+    }
+
+    .empty-cell {
+      color: var(--ink-muted);
+      font-style: italic;
+      font-size: 12px;
+    }
+
+    .tbl-foot-note {
+      padding: 8px 14px;
+      font-size: 12px;
+      color: var(--ink-muted);
+      background: var(--bg-subtle);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    body.show-unchanged-cols .unchanged-hint { display: none; }
+
+     
+    .empty-state {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 40px 24px;
+      text-align: center;
+      color: var(--ink-secondary);
+    }
+
+    .empty-state h2 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      color: var(--ink-primary);
+    }
+
+    .empty-state p {
+      margin: 0 auto 14px;
+      max-width: 60ch;
+      font-size: 13.5px;
+    }
+
+    .is-hidden { display: none !important; }
+
+    .report-footer {
+      margin-top: 24px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    @media (max-width: 960px) {
+      .topbar { position: static; }
+      .topbar-inner, .shell { padding-left: 14px; padding-right: 14px; }
+      .ledger-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .ledger-cell:nth-child(2) { border-right: 0; }
+      .ledger-cell:nth-child(1), .ledger-cell:nth-child(2) { border-bottom: 1px solid var(--border); }
+      .workbench { grid-template-columns: minmax(0, 1fr); }
+      .sidebar {
+        position: static;
+        max-height: 300px;
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .ledger-row { grid-template-columns: minmax(0, 1fr); }
+      .ledger-cell { border-right: 0; border-bottom: 1px solid var(--border); }
+      .ledger-cell:last-child { border-bottom: 0; }
+      .endpoints { flex: 0 0 100%; width: 100%; flex-direction: column; align-items: stretch; justify-content: flex-start; }
+      .endpoints-arrow { display: none; }
+      .endpoint-chip { width: 100%; max-width: 100%; }
+      .spectrum-wrap { min-width: 0; max-width: 100%; width: 100%; }
+      .topbar-actions { width: 100%; justify-content: space-between; }
+    }
+
+    @media print {
+      .topbar { position: static; box-shadow: none; }
+      .sidebar, .topbar-actions, .canvas-toolbar { display: none !important; }
+      .workbench { grid-template-columns: 1fr; }
+      .tbl-card { break-inside: avoid; box-shadow: none; }
+      body.show-unchanged-cols .col-row { display: table-row !important; }
+    }
+  </style>
+</head>
+<body>
+  <textarea id="sd-md-payload" class="sr-only" aria-hidden="true" tabindex="-1">## schema-drift Report
+
+- **Source A (SQL Server):** `sqlserver://readonly:***@legacy-erp.prod:1433?database=CoreBilling&amp;ApplicationIntent=ReadOnly` (10 tables read)
+- **Source B (PostgreSQL):** `postgres://readonly:***@aurora-v16.prod:5432/core_billing?sslmode=require&amp;default_transaction_read_only=on` (9 tables read)
+
+| Metric | Count |
+| --- | ---: |
+| Only in A (Tables) | 2 |
+| Only in B (Tables) | 2 |
+| Modified Tables | 4 |
+| Identical Tables | 2 |
+| Column Diffs (in Modified Tables) | 9 |
+| Unmapped Types | 2 |
+</textarea>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="7" height="16" rx="1.5"></rect>
+            <rect x="14" y="4" width="7" height="16" rx="1.5"></rect>
+            <path d="M10 9h4M10 15h4"></path>
+          </svg>
+        </span>
+        <h1 class="brand-title">schema-drift</h1>
+        
+          <span class="status-pill is-drift">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+            Drift Detected
+          </span>
+        
+      </div>
+
+      <div class="endpoints" aria-label="Compared databases">
+        <div class="endpoint-chip" title="sqlserver://readonly:***@legacy-erp.prod:1433?database=CoreBilling&amp;ApplicationIntent=ReadOnly">
+          <span class="endpoint-side">A</span>
+          <span class="endpoint-engine">SQL Server</span>
+          <span class="endpoint-dsn">sqlserver://legacy-erp.prod:1433/CoreBilling</span>
+          <span class="endpoint-count num">(10 read)</span>
+        </div>
+        <svg class="icon endpoints-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-4-4 4 4-4 4"></path></svg>
+        <div class="endpoint-chip" title="postgres://readonly:***@aurora-v16.prod:5432/core_billing?sslmode=require&amp;default_transaction_read_only=on">
+          <span class="endpoint-side">B</span>
+          <span class="endpoint-engine">PostgreSQL</span>
+          <span class="endpoint-dsn">postgres://aurora-v16.prod:5432/core_billing</span>
+          <span class="endpoint-count num">(9 read)</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button type="button" class="btn" id="copy-md-btn">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span id="copy-md-label">Copy Summary</span>
+        </button>
+        <div class="theme-group" role="group" aria-label="Color theme">
+          <button type="button" class="theme-btn is-active" data-theme-choice="auto">Auto</button>
+          <button type="button" class="theme-btn" data-theme-choice="light">Light</button>
+          <button type="button" class="theme-btn" data-theme-choice="dark">Dark</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="ledger" aria-label="Schema diff summary">
+      <div class="ledger-row">
+        <button type="button" class="ledger-cell" data-filter-target="only_a">
+          <div class="ledger-head">
+            <span class="ledger-label"><span class="dot dot-a"></span>Only in Source A</span>
+            <span class="mono">+</span>
+          </div>
+          <div class="ledger-val is-a num">2</div>
+          <div class="ledger-sub num">
+            tables · +1 cols in modified
+          </div>
+        </button>
+
+        <button type="button" class="ledger-cell" data-filter-target="only_b">
+          <div class="ledger-head">
+            <span class="ledger-label"><span class="dot dot-b"></span>Only in Source B</span>
+            <span class="mono">-</span>
+          </div>
+          <div class="ledger-val is-b num">2</div>
+          <div class="ledger-sub num">
+            tables · -1 cols in modified
+          </div>
+        </button>
+
+        <button type="button" class="ledger-cell" data-filter-target="modified">
+          <div class="ledger-head">
+            <span class="ledger-label"><span class="dot dot-mod"></span>Modified Tables</span>
+            <span class="mono">~</span>
+          </div>
+          <div class="ledger-val is-mod num">4</div>
+          <div class="ledger-sub num">
+            7 changed cols · 3 type · 2 len · 1 prec
+          </div>
+        </button>
+
+        <button type="button" class="ledger-cell" data-filter-target="identical">
+          <div class="ledger-head">
+            <span class="ledger-label"><span class="dot dot-eq"></span>Identical Tables</span>
+            <span class="mono">=</span>
+          </div>
+          <div class="ledger-val num">2</div>
+          <div class="ledger-sub num">19 matching columns</div>
+        </button>
+      </div>
+
+      <div class="ledger-footer">
+        <div class="spectrum-wrap">
+          <span class="num"><strong>20%</strong> table parity</span>
+          <div class="spectrum-bar" aria-hidden="true">
+            <div class="seg-a" style="width: 20.00%"></div>
+            <div class="seg-b" style="width: 20.00%"></div>
+            <div class="seg-mod" style="width: 40.00%"></div>
+            <div class="seg-eq" style="width: 20.00%"></div>
+          </div>
+        </div>
+
+        <div class="notice-strip">
+          
+            <span class="meta-tag">Cross-engine normalized</span>
+          
+          
+            <span class="meta-tag is-unmapped num">2 unmapped type(s)</span>
+          
+          
+            <span class="meta-tag is-case num">2 casing notice(s)</span>
+          
+          
+            <span class="meta-tag num">3 ignored via glob</span>
+          
+          <span class="meta-tag num">2026-11-19 07:33:53 UTC</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="workbench">
+      <aside class="sidebar" aria-label="Table navigator and filters">
+        <div class="sidebar-controls">
+          <div class="search-box" id="search-box">
+            <svg class="icon search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+            <input type="search" id="table-search" class="search-input" placeholder="Filter tables or columns…" aria-label="Filter tables or columns">
+            <span class="kbd-hint" aria-hidden="true">/</span>
+            <button type="button" class="clear-search" id="clear-search" aria-label="Clear search">Esc</button>
+          </div>
+
+          <div class="filter-chips" role="group" aria-label="Filter tables by status">
+            <button type="button" class="chip is-active" data-filter="all">All <span class="num">10</span></button>
+            <button type="button" class="chip" data-filter="drifted">Drifted <span class="num">8</span></button>
+            <button type="button" class="chip" data-filter="only_a">Only A <span class="num">2</span></button>
+            <button type="button" class="chip" data-filter="only_b">Only B <span class="num">2</span></button>
+            <button type="button" class="chip" data-filter="modified">Modified <span class="num">4</span></button>
+            <button type="button" class="chip" data-filter="identical">Identical <span class="num">2</span></button>
+            
+              <button type="button" class="chip" data-filter="unmapped">Unmapped</button>
+            
+          </div>
+        </div>
+
+        <nav class="nav-list" id="nav-list" aria-label="Table jump list">
+          
+            <a href="#tbl-0" class="nav-item"
+               data-anchor="tbl-0"
+               data-status="identical"
+               data-unmapped="0"
+               data-search="billing.invoices invoices invoices billing billing invoice_id invoice_id uniqueidentifier uuid uuid uuid subtotal subtotal money(19,4) decimal numeric(19,4) decimal tax_rate tax_rate decimal(5,4) decimal numeric(5,4) decimal pdf_blob pdf_blob varbinary(max) blob bytea blob">
+              <span class="nav-left">
+                <span class="dot dot-eq"></span>
+                <span class="nav-name">billing.invoices</span>
+              </span>
+              <span class="nav-counts num">
+                
+                
+                
+              </span>
+            </a>
+          
+            <a href="#tbl-1" class="nav-item"
+               data-anchor="tbl-1"
+               data-status="modified"
+               data-unmapped="0"
+               data-search="countries countries countries dbo public code code char(2) string character(2) string name name nvarchar(50) string character varying(100) string">
+              <span class="nav-left">
+                <span class="dot dot-mod"></span>
+                <span class="nav-name">countries</span>
+              </span>
+              <span class="nav-counts num">
+                
+                
+                
+                  
+                  
+                  <span class="c-mod">~1</span>
+                
+              </span>
+            </a>
+          
+            <a href="#tbl-2" class="nav-item"
+               data-anchor="tbl-2"
+               data-status="identical"
+               data-unmapped="0"
+               data-search="currencies currencies currencies dbo public iso_code iso_code char(3) string character(3) string symbol symbol nvarchar(8) string character varying(8) string minor_units minor_units smallint smallint smallint smallint">
+              <span class="nav-left">
+                <span class="dot dot-eq"></span>
+                <span class="nav-name">currencies</span>
+              </span>
+              <span class="nav-counts num">
+                
+                
+                
+              </span>
+            </a>
+          
+            <a href="#tbl-3" class="nav-item"
+               data-anchor="tbl-3"
+               data-status="only_b"
+               data-unmapped="0"
+               data-search="idempotency_keys  idempotency_keys  public  key character varying(128) string  expires_at timestamp with time zone timestamptz">
+              <span class="nav-left">
+                <span class="dot dot-b"></span>
+                <span class="nav-name">idempotency_keys</span>
+              </span>
+              <span class="nav-counts num">
+                
+                <span class="c-b">-2</span>
+                
+              </span>
+            </a>
+          
+            <a href="#tbl-4" class="nav-item"
+               data-anchor="tbl-4"
+               data-status="only_a"
+               data-unmapped="0"
+               data-search="legacy_sessions legacy_sessions  dbo  session_token  varchar(64) string user_id  bigint bigint expires_at  datetime2 timestamp">
+              <span class="nav-left">
+                <span class="dot dot-a"></span>
+                <span class="nav-name">legacy_sessions</span>
+              </span>
+              <span class="nav-counts num">
+                <span class="c-a">+3</span>
+                
+                
+              </span>
+            </a>
+          
+            <a href="#tbl-5" class="nav-item"
+               data-anchor="tbl-5"
+               data-status="modified"
+               data-unmapped="0"
+               data-search="orders orders orders dbo public id id uniqueidentifier uuid uuid uuid user_id user_id bigint bigint bigint bigint total_amount total_amount decimal(10,2) decimal numeric(12,2) decimal status status nvarchar(32) string character varying(32) string notes notes nvarchar(max) text text text settled_at settled_at datetime2 timestamp timestamp without time zone timestamp">
+              <span class="nav-left">
+                <span class="dot dot-mod"></span>
+                <span class="nav-name">orders</span>
+              </span>
+              <span class="nav-counts num">
+                
+                
+                
+                  
+                  
+                  <span class="c-mod">~2</span>
+                
+              </span>
+            </a>
+          
+            <a href="#tbl-6" class="nav-item"
+               data-anchor="tbl-6"
+               data-status="modified"
+               data-unmapped="0"
+               data-search="products products products dbo public id id int integer bigint bigint sku sku varchar(40) string character varying(40) string title title nvarchar(150) string character varying(150) string weight_kg weight_kg real float32 double precision float64 is_published is_published bit boolean boolean boolean">
+              <span class="nav-left">
+                <span class="dot dot-mod"></span>
+                <span class="nav-name">products</span>
+              </span>
+              <span class="nav-counts num">
+                
+                
+                
+                  
+                  
+                  <span class="c-mod">~2</span>
+                
+              </span>
+            </a>
+          
+            <a href="#tbl-7" class="nav-item"
+               data-anchor="tbl-7"
+               data-status="only_a"
+               data-unmapped="0"
+               data-search="soap_xml_queue soap_xml_queue  dbo  id  bigint bigint envelope  xml xml queued_at  datetimeoffset timestamptz">
+              <span class="nav-left">
+                <span class="dot dot-a"></span>
+                <span class="nav-name">soap_xml_queue</span>
+              </span>
+              <span class="nav-counts num">
+                <span class="c-a">+3</span>
+                
+                
+              </span>
+            </a>
+          
+            <a href="#tbl-8" class="nav-item"
+               data-anchor="tbl-8"
+               data-status="modified"
+               data-unmapped="1"
+               data-search="users users users dbo public userid userid bigint bigint bigint bigint email email nvarchar(120) string character varying(120) string full_name full_name nvarchar(80) string character varying(120) string is_active is_active bit boolean boolean boolean created_at created_at datetimeoffset timestamptz timestamp with time zone timestamptz legacy_pin  char(6) string org_node org_node hierarchyid unmapped text text  mfa_enabled boolean boolean">
+              <span class="nav-left">
+                <span class="dot dot-mod"></span>
+                <span class="nav-name">Users</span>
+              </span>
+              <span class="nav-counts num">
+                
+                
+                
+                  <span class="c-a">+1</span>
+                  <span class="c-b">-1</span>
+                  <span class="c-mod">~2</span>
+                
+              </span>
+            </a>
+          
+            <a href="#tbl-9" class="nav-item"
+               data-anchor="tbl-9"
+               data-status="only_b"
+               data-unmapped="1"
+               data-search="webhook_events  webhook_events  public  id bigint bigint  payload jsonb json  search_vec tsvector unmapped  received_at timestamp with time zone timestamptz">
+              <span class="nav-left">
+                <span class="dot dot-b"></span>
+                <span class="nav-name">webhook_events</span>
+              </span>
+              <span class="nav-counts num">
+                
+                <span class="c-b">-4</span>
+                
+              </span>
+            </a>
+          
+        </nav>
+      </aside>
+
+      <section class="canvas" aria-label="Table comparison details">
+        <div class="canvas-toolbar">
+          <div class="canvas-count" id="visible-counter" aria-live="polite">
+            Showing 10 of 10 tables
+          </div>
+          <div class="toolbar-right">
+            <label class="toggle-label">
+              <input type="checkbox" id="toggle-unchanged-cols">
+              Show unchanged columns
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="toggle-identical-tables" checked>
+              Show identical tables
+            </label>
+            <button type="button" class="btn" id="expand-all-btn">Expand All</button>
+            <button type="button" class="btn" id="collapse-all-btn">Collapse All</button>
+          </div>
+        </div>
+
+        
+          <div id="tables-container" class="canvas">
+            
+              <details id="tbl-0" class="tbl-card"
+                       data-status="identical"
+                       data-unmapped="0"
+                       data-search="billing.invoices invoices invoices billing billing invoice_id invoice_id uniqueidentifier uuid uuid uuid subtotal subtotal money(19,4) decimal numeric(19,4) decimal tax_rate tax_rate decimal(5,4) decimal numeric(5,4) decimal pdf_blob pdf_blob varbinary(max) blob bytea blob"
+                       >
+                <summary class="tbl-summary">
+                  <div class="tbl-title-group">
+                    <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                    <span class="badge badge-identical">Identical</span>
+                    <h2 class="tbl-name">billing.invoices</h2>
+                    
+                    
+                    
+                  </div>
+
+                  <div class="tbl-metrics num">
+                    
+                      <span class="note-muted">4 cols</span>
+                    
+                  </div>
+                </summary>
+
+                
+                  <div class="table-scroll">
+                    <table class="col-table">
+                      <thead>
+                        <tr>
+                          <th>Column</th>
+                          <th>Status</th>
+                          <th>Source A (SQL Server)</th>
+                          <th>Target B (PostgreSQL)</th>
+                          <th>Differences &amp; Notices</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">invoice_id</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">uniqueidentifier</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">uuid</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">uuid</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">uuid</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">subtotal</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">money(19,4)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">decimal(19,4)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">numeric(19,4)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">decimal(19,4)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">tax_rate</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">decimal(5,4)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">decimal(5,4)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT ((0))</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">numeric(5,4)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">decimal(5,4)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT 0</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">pdf_blob</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">varbinary(max)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">blob</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">bytea</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">blob</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                
+              </details>
+            
+              <details id="tbl-1" class="tbl-card"
+                       data-status="modified"
+                       data-unmapped="0"
+                       data-search="countries countries countries dbo public code code char(2) string character(2) string name name nvarchar(50) string character varying(100) string"
+                       open>
+                <summary class="tbl-summary">
+                  <div class="tbl-title-group">
+                    <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                    <span class="badge badge-modified">Modified</span>
+                    <h2 class="tbl-name">countries</h2>
+                    
+                      <span class="tbl-origin">dbo.countries vs public.countries</span>
+                    
+                    
+                    
+                  </div>
+
+                  <div class="tbl-metrics num">
+                    
+                      
+                      
+                      <span class="c-mod">~1</span>
+                      <span class="note-muted">=1</span>
+                    
+                  </div>
+                </summary>
+
+                
+                  <div class="table-scroll">
+                    <table class="col-table">
+                      <thead>
+                        <tr>
+                          <th>Column</th>
+                          <th>Status</th>
+                          <th>Source A (SQL Server)</th>
+                          <th>Target B (PostgreSQL)</th>
+                          <th>Differences &amp; Notices</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">code</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">char(2)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(2)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">character(2)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(2)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="modified">
+                            <td>
+                              <div class="col-name">name</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-modified">Modified</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">nvarchar(50)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(50)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">character varying(100)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(100)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                  <span class="attr-diff">
+                                    <span class="attr-field">length:</span>
+                                    <span class="attr-val">50 → 100</span>
+                                  </span>
+                                
+                                
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                    <div class="tbl-foot-note unchanged-hint">
+                      <span class="num">1 unchanged column(s) hidden for focus.</span>
+                      <button type="button" class="btn reveal-cols-btn">Show all columns</button>
+                    </div>
+                  
+                
+              </details>
+            
+              <details id="tbl-2" class="tbl-card"
+                       data-status="identical"
+                       data-unmapped="0"
+                       data-search="currencies currencies currencies dbo public iso_code iso_code char(3) string character(3) string symbol symbol nvarchar(8) string character varying(8) string minor_units minor_units smallint smallint smallint smallint"
+                       >
+                <summary class="tbl-summary">
+                  <div class="tbl-title-group">
+                    <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                    <span class="badge badge-identical">Identical</span>
+                    <h2 class="tbl-name">currencies</h2>
+                    
+                      <span class="tbl-origin">dbo.currencies vs public.currencies</span>
+                    
+                    
+                    
+                  </div>
+
+                  <div class="tbl-metrics num">
+                    
+                      <span class="note-muted">3 cols</span>
+                    
+                  </div>
+                </summary>
+
+                
+                  <div class="table-scroll">
+                    <table class="col-table">
+                      <thead>
+                        <tr>
+                          <th>Column</th>
+                          <th>Status</th>
+                          <th>Source A (SQL Server)</th>
+                          <th>Target B (PostgreSQL)</th>
+                          <th>Differences &amp; Notices</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">iso_code</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">char(3)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(3)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">character(3)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(3)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">symbol</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">nvarchar(8)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(8)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">character varying(8)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(8)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">minor_units</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">smallint</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">smallint</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT ((2))</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">smallint</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">smallint</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT 2</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                
+              </details>
+            
+              <details id="tbl-3" class="tbl-card"
+                       data-status="only_b"
+                       data-unmapped="0"
+                       data-search="idempotency_keys  idempotency_keys  public  key character varying(128) string  expires_at timestamp with time zone timestamptz"
+                       open>
+                <summary class="tbl-summary">
+                  <div class="tbl-title-group">
+                    <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                    <span class="badge badge-only_b">Only in B</span>
+                    <h2 class="tbl-name">idempotency_keys</h2>
+                    
+                      <span class="tbl-origin">public.idempotency_keys</span>
+                    
+                    
+                    
+                  </div>
+
+                  <div class="tbl-metrics num">
+                    
+                      <span class="c-b">-2 cols</span>
+                    
+                  </div>
+                </summary>
+
+                
+                  <div class="table-scroll">
+                    <table class="col-table">
+                      <thead>
+                        <tr>
+                          <th>Column</th>
+                          <th>Status</th>
+                          <th>Source A (SQL Server)</th>
+                          <th>Target B (PostgreSQL)</th>
+                          <th>Differences &amp; Notices</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr class="col-row" data-col-status="only_b">
+                            <td>
+                              <div class="col-name">key</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_b">Only in B</span>
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in A</span>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">character varying(128)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(128)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in A</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="only_b">
+                            <td>
+                              <div class="col-name">expires_at</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_b">Only in B</span>
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in A</span>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">timestamp with time zone</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">timestamptz</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in A</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                
+              </details>
+            
+              <details id="tbl-4" class="tbl-card"
+                       data-status="only_a"
+                       data-unmapped="0"
+                       data-search="legacy_sessions legacy_sessions  dbo  session_token  varchar(64) string user_id  bigint bigint expires_at  datetime2 timestamp"
+                       open>
+                <summary class="tbl-summary">
+                  <div class="tbl-title-group">
+                    <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                    <span class="badge badge-only_a">Only in A</span>
+                    <h2 class="tbl-name">legacy_sessions</h2>
+                    
+                      <span class="tbl-origin">dbo.legacy_sessions</span>
+                    
+                    
+                    
+                  </div>
+
+                  <div class="tbl-metrics num">
+                    
+                      <span class="c-a">+3 cols</span>
+                    
+                  </div>
+                </summary>
+
+                
+                  <div class="table-scroll">
+                    <table class="col-table">
+                      <thead>
+                        <tr>
+                          <th>Column</th>
+                          <th>Status</th>
+                          <th>Source A (SQL Server)</th>
+                          <th>Target B (PostgreSQL)</th>
+                          <th>Differences &amp; Notices</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr class="col-row" data-col-status="only_a">
+                            <td>
+                              <div class="col-name">session_token</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_a">Only in A</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">varchar(64)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(64)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in B</span>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in B</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="only_a">
+                            <td>
+                              <div class="col-name">user_id</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_a">Only in A</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">bigint</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">bigint</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in B</span>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in B</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="only_a">
+                            <td>
+                              <div class="col-name">expires_at</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_a">Only in A</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">datetime2</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">timestamp</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in B</span>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in B</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                
+              </details>
+            
+              <details id="tbl-5" class="tbl-card"
+                       data-status="modified"
+                       data-unmapped="0"
+                       data-search="orders orders orders dbo public id id uniqueidentifier uuid uuid uuid user_id user_id bigint bigint bigint bigint total_amount total_amount decimal(10,2) decimal numeric(12,2) decimal status status nvarchar(32) string character varying(32) string notes notes nvarchar(max) text text text settled_at settled_at datetime2 timestamp timestamp without time zone timestamp"
+                       open>
+                <summary class="tbl-summary">
+                  <div class="tbl-title-group">
+                    <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                    <span class="badge badge-modified">Modified</span>
+                    <h2 class="tbl-name">orders</h2>
+                    
+                      <span class="tbl-origin">dbo.orders vs public.orders</span>
+                    
+                    
+                    
+                  </div>
+
+                  <div class="tbl-metrics num">
+                    
+                      
+                      
+                      <span class="c-mod">~2</span>
+                      <span class="note-muted">=4</span>
+                    
+                  </div>
+                </summary>
+
+                
+                  <div class="table-scroll">
+                    <table class="col-table">
+                      <thead>
+                        <tr>
+                          <th>Column</th>
+                          <th>Status</th>
+                          <th>Source A (SQL Server)</th>
+                          <th>Target B (PostgreSQL)</th>
+                          <th>Differences &amp; Notices</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">id</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">uniqueidentifier</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">uuid</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">uuid</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">uuid</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">user_id</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">bigint</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">bigint</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">bigint</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">bigint</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="modified">
+                            <td>
+                              <div class="col-name">total_amount</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-modified">Modified</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">decimal(10,2)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">decimal(10,2)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT ((0.00))</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">numeric(12,2)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">decimal(12,2)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT 0.00</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                  <span class="attr-diff">
+                                    <span class="attr-field">precision:</span>
+                                    <span class="attr-val">10 → 12</span>
+                                  </span>
+                                
+                                
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">status</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">nvarchar(32)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(32)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT (&#39;pending&#39;)</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">character varying(32)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(32)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT &#39;pending&#39;::character varying</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                  <span class="note-muted">Cross-engine default expressions differ; presence matches.</span>
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">notes</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">nvarchar(max)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">text</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">text</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">text</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="modified">
+                            <td>
+                              <div class="col-name">settled_at</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-modified">Modified</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">datetime2</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">timestamp</span>
+                                    <span class="null-tag">NULL</span>
+                                    <code class="def-code">DEFAULT (getdate())</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">timestamp without time zone</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">timestamp</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                  <span class="attr-diff">
+                                    <span class="attr-field">default:</span>
+                                    <span class="attr-val">(getdate()) → none</span>
+                                  </span>
+                                
+                                
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                    <div class="tbl-foot-note unchanged-hint">
+                      <span class="num">4 unchanged column(s) hidden for focus.</span>
+                      <button type="button" class="btn reveal-cols-btn">Show all columns</button>
+                    </div>
+                  
+                
+              </details>
+            
+              <details id="tbl-6" class="tbl-card"
+                       data-status="modified"
+                       data-unmapped="0"
+                       data-search="products products products dbo public id id int integer bigint bigint sku sku varchar(40) string character varying(40) string title title nvarchar(150) string character varying(150) string weight_kg weight_kg real float32 double precision float64 is_published is_published bit boolean boolean boolean"
+                       open>
+                <summary class="tbl-summary">
+                  <div class="tbl-title-group">
+                    <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                    <span class="badge badge-modified">Modified</span>
+                    <h2 class="tbl-name">products</h2>
+                    
+                      <span class="tbl-origin">dbo.products vs public.products</span>
+                    
+                    
+                    
+                  </div>
+
+                  <div class="tbl-metrics num">
+                    
+                      
+                      
+                      <span class="c-mod">~2</span>
+                      <span class="note-muted">=3</span>
+                    
+                  </div>
+                </summary>
+
+                
+                  <div class="table-scroll">
+                    <table class="col-table">
+                      <thead>
+                        <tr>
+                          <th>Column</th>
+                          <th>Status</th>
+                          <th>Source A (SQL Server)</th>
+                          <th>Target B (PostgreSQL)</th>
+                          <th>Differences &amp; Notices</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr class="col-row" data-col-status="modified">
+                            <td>
+                              <div class="col-name">id</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-modified">Modified</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">int</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">integer</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">bigint</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">bigint</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                  <span class="attr-diff">
+                                    <span class="attr-field">type:</span>
+                                    <span class="attr-val">integer → bigint</span>
+                                  </span>
+                                
+                                
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">sku</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">varchar(40)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(40)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">character varying(40)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(40)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">title</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">nvarchar(150)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(150)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">character varying(150)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(150)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="modified">
+                            <td>
+                              <div class="col-name">weight_kg</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-modified">Modified</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">real</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">float32</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">double precision</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">float64</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                  <span class="attr-diff">
+                                    <span class="attr-field">type:</span>
+                                    <span class="attr-val">float32 → float64</span>
+                                  </span>
+                                
+                                
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">is_published</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">bit</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">boolean</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT ((0))</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">boolean</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">boolean</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT false</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                  <span class="note-muted">Cross-engine default expressions differ; presence matches.</span>
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                    <div class="tbl-foot-note unchanged-hint">
+                      <span class="num">3 unchanged column(s) hidden for focus.</span>
+                      <button type="button" class="btn reveal-cols-btn">Show all columns</button>
+                    </div>
+                  
+                
+              </details>
+            
+              <details id="tbl-7" class="tbl-card"
+                       data-status="only_a"
+                       data-unmapped="0"
+                       data-search="soap_xml_queue soap_xml_queue  dbo  id  bigint bigint envelope  xml xml queued_at  datetimeoffset timestamptz"
+                       open>
+                <summary class="tbl-summary">
+                  <div class="tbl-title-group">
+                    <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                    <span class="badge badge-only_a">Only in A</span>
+                    <h2 class="tbl-name">soap_xml_queue</h2>
+                    
+                      <span class="tbl-origin">dbo.soap_xml_queue</span>
+                    
+                    
+                    
+                  </div>
+
+                  <div class="tbl-metrics num">
+                    
+                      <span class="c-a">+3 cols</span>
+                    
+                  </div>
+                </summary>
+
+                
+                  <div class="table-scroll">
+                    <table class="col-table">
+                      <thead>
+                        <tr>
+                          <th>Column</th>
+                          <th>Status</th>
+                          <th>Source A (SQL Server)</th>
+                          <th>Target B (PostgreSQL)</th>
+                          <th>Differences &amp; Notices</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr class="col-row" data-col-status="only_a">
+                            <td>
+                              <div class="col-name">id</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_a">Only in A</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">bigint</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">bigint</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in B</span>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in B</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="only_a">
+                            <td>
+                              <div class="col-name">envelope</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_a">Only in A</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">xml</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">xml</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in B</span>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in B</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="only_a">
+                            <td>
+                              <div class="col-name">queued_at</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_a">Only in A</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">datetimeoffset</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">timestamptz</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT (sysdatetimeoffset())</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in B</span>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in B</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                
+              </details>
+            
+              <details id="tbl-8" class="tbl-card"
+                       data-status="modified"
+                       data-unmapped="1"
+                       data-search="users users users dbo public userid userid bigint bigint bigint bigint email email nvarchar(120) string character varying(120) string full_name full_name nvarchar(80) string character varying(120) string is_active is_active bit boolean boolean boolean created_at created_at datetimeoffset timestamptz timestamp with time zone timestamptz legacy_pin  char(6) string org_node org_node hierarchyid unmapped text text  mfa_enabled boolean boolean"
+                       open>
+                <summary class="tbl-summary">
+                  <div class="tbl-title-group">
+                    <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                    <span class="badge badge-modified">Modified</span>
+                    <h2 class="tbl-name">Users</h2>
+                    
+                      <span class="tbl-origin">dbo.Users vs public.users</span>
+                    
+                    
+                      <span class="badge badge-case">Case: Users ↔ users</span>
+                    
+                    
+                      <span class="badge badge-unmapped num">1 unmapped</span>
+                    
+                  </div>
+
+                  <div class="tbl-metrics num">
+                    
+                      <span class="c-a">+1</span>
+                      <span class="c-b">-1</span>
+                      <span class="c-mod">~2</span>
+                      <span class="note-muted">=4</span>
+                    
+                  </div>
+                </summary>
+
+                
+                  <div class="table-scroll">
+                    <table class="col-table">
+                      <thead>
+                        <tr>
+                          <th>Column</th>
+                          <th>Status</th>
+                          <th>Source A (SQL Server)</th>
+                          <th>Target B (PostgreSQL)</th>
+                          <th>Differences &amp; Notices</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">UserID / userid</div>
+                              
+                                <div style="margin-top:4px"><span class="badge badge-case">UserID ↔ userid</span></div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">bigint</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">bigint</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">bigint</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">bigint</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">email</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">nvarchar(120)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(120)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">character varying(120)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(120)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">No changes</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="modified">
+                            <td>
+                              <div class="col-name">full_name</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-modified">Modified</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">nvarchar(80)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(80)</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">character varying(120)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(120)</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                  <span class="attr-diff">
+                                    <span class="attr-field">length:</span>
+                                    <span class="attr-val">80 → 120</span>
+                                  </span>
+                                
+                                  <span class="attr-diff">
+                                    <span class="attr-field">nullable:</span>
+                                    <span class="attr-val">NOT NULL → NULL</span>
+                                  </span>
+                                
+                                
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">is_active</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">bit</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">boolean</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT ((1))</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">boolean</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">boolean</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT true</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                  <span class="note-muted">Cross-engine default expressions differ; presence matches.</span>
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="identical">
+                            <td>
+                              <div class="col-name">created_at</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-identical">Identical</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">datetimeoffset</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">timestamptz</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT (sysdatetimeoffset())</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">timestamp with time zone</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">timestamptz</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT now()</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                  <span class="note-muted">Cross-engine default expressions differ; presence matches.</span>
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="only_a">
+                            <td>
+                              <div class="col-name">legacy_pin</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_a">Only in A</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">char(6)</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">string(6)</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in B</span>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in B</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="modified">
+                            <td>
+                              <div class="col-name">org_node</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-modified">Modified</span>
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">hierarchyid</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">unmapped(hierarchyid)</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">text</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">text</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                  <span class="attr-diff">
+                                    <span class="attr-field">type:</span>
+                                    <span class="attr-val">unmapped(hierarchyid) → text</span>
+                                  </span>
+                                
+                                
+                                  <span class="badge badge-unmapped" title="This native type is outside the canonical cross-engine type map">unmapped type</span>
+                                
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="only_b">
+                            <td>
+                              <div class="col-name">mfa_enabled</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_b">Only in B</span>
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in A</span>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">boolean</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">boolean</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT false</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in A</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                    <div class="tbl-foot-note unchanged-hint">
+                      <span class="num">4 unchanged column(s) hidden for focus.</span>
+                      <button type="button" class="btn reveal-cols-btn">Show all columns</button>
+                    </div>
+                  
+                
+              </details>
+            
+              <details id="tbl-9" class="tbl-card"
+                       data-status="only_b"
+                       data-unmapped="1"
+                       data-search="webhook_events  webhook_events  public  id bigint bigint  payload jsonb json  search_vec tsvector unmapped  received_at timestamp with time zone timestamptz"
+                       open>
+                <summary class="tbl-summary">
+                  <div class="tbl-title-group">
+                    <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                    <span class="badge badge-only_b">Only in B</span>
+                    <h2 class="tbl-name">webhook_events</h2>
+                    
+                      <span class="tbl-origin">public.webhook_events</span>
+                    
+                    
+                    
+                      <span class="badge badge-unmapped num">1 unmapped</span>
+                    
+                  </div>
+
+                  <div class="tbl-metrics num">
+                    
+                      <span class="c-b">-4 cols</span>
+                    
+                  </div>
+                </summary>
+
+                
+                  <div class="table-scroll">
+                    <table class="col-table">
+                      <thead>
+                        <tr>
+                          <th>Column</th>
+                          <th>Status</th>
+                          <th>Source A (SQL Server)</th>
+                          <th>Target B (PostgreSQL)</th>
+                          <th>Differences &amp; Notices</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr class="col-row" data-col-status="only_b">
+                            <td>
+                              <div class="col-name">id</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_b">Only in B</span>
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in A</span>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">bigint</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">bigint</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in A</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="only_b">
+                            <td>
+                              <div class="col-name">payload</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_b">Only in B</span>
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in A</span>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">jsonb</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">json</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in A</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="only_b">
+                            <td>
+                              <div class="col-name">search_vec</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_b">Only in B</span>
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in A</span>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">tsvector</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">unmapped(tsvector)</span>
+                                    <span class="null-tag">NULL</span>
+                                    
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                  <span class="badge badge-unmapped" title="This native type is outside the canonical cross-engine type map">unmapped type</span>
+                                
+                                
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                          <tr class="col-row" data-col-status="only_b">
+                            <td>
+                              <div class="col-name">received_at</div>
+                              
+                            </td>
+                            <td>
+                              <span class="badge badge-only_b">Only in B</span>
+                            </td>
+                            <td>
+                              
+                                <span class="empty-cell">not in A</span>
+                              
+                            </td>
+                            <td>
+                              
+                                <div class="type-stack">
+                                  <span class="type-raw">timestamp with time zone</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">timestamptz</span>
+                                    <span class="null-tag">NOT NULL</span>
+                                    <code class="def-code">DEFAULT now()</code>
+                                  </div>
+                                </div>
+                              
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                
+                                
+                                
+                                
+                                  
+                                    <span class="note-muted">Missing in A</span>
+                                  
+                                
+                              </div>
+                            </td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                
+              </details>
+            
+          </div>
+
+          <div id="no-filter-matches" class="empty-state is-hidden">
+            <h2>No tables match your active filters</h2>
+            <p>Adjust your search query or reset the status filter to inspect all 10 tables.</p>
+            <button type="button" class="btn" id="reset-filters-btn">Reset filters</button>
+          </div>
+        
+      </section>
+    </div>
+
+    <footer class="report-footer">
+      <span>Generated by <strong>schema-drift</strong> · Read-only metadata inspection (zero row data read)</span>
+      <span class="num">
+        Completed in 38ms · 2026-11-19 07:33:53 UTC
+      </span>
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var searchInput = document.getElementById('table-search');
+      var searchBox = document.getElementById('search-box');
+      var clearBtn = document.getElementById('clear-search');
+      var filterButtons = Array.prototype.slice.call(document.querySelectorAll('.chip[data-filter]'));
+      var ledgerButtons = Array.prototype.slice.call(document.querySelectorAll('.ledger-cell[data-filter-target]'));
+      var toggleUnchanged = document.getElementById('toggle-unchanged-cols');
+      var toggleIdentical = document.getElementById('toggle-identical-tables');
+      var expandAllBtn = document.getElementById('expand-all-btn');
+      var collapseAllBtn = document.getElementById('collapse-all-btn');
+      var copyBtn = document.getElementById('copy-md-btn');
+      var copyLabel = document.getElementById('copy-md-label');
+      var resetBtn = document.getElementById('reset-filters-btn');
+      var emptyMsg = document.getElementById('no-filter-matches');
+      var counterEl = document.getElementById('visible-counter');
+      var tableCards = Array.prototype.slice.call(document.querySelectorAll('.tbl-card'));
+      var navItems = Array.prototype.slice.call(document.querySelectorAll('.nav-item'));
+      var themeBtns = Array.prototype.slice.call(document.querySelectorAll('.theme-btn'));
+
+      var activeFilter = 'all';
+
+      
+      function setTheme(choice) {
+        if (choice === 'light' || choice === 'dark') {
+          root.setAttribute('data-theme', choice);
+        } else {
+          root.removeAttribute('data-theme');
+        }
+        themeBtns.forEach(function (btn) {
+          btn.classList.toggle('is-active', btn.getAttribute('data-theme-choice') === choice);
+        });
+        try { localStorage.setItem('schema-drift-theme', choice); } catch (_) {}
+      }
+
+      try {
+        var urlTheme = new URLSearchParams(window.location.search).get('theme');
+        var savedTheme = urlTheme || localStorage.getItem('schema-drift-theme');
+        if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') {
+          setTheme(savedTheme);
+        }
+      } catch (_) {}
+
+      themeBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setTheme(btn.getAttribute('data-theme-choice'));
+        });
+      });
+
+      
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+          var md = document.getElementById('sd-md-payload').value || '';
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(md).then(showCopied, showCopied);
+          } else {
+            showCopied();
+          }
+        });
+      }
+
+      function showCopied() {
+        if (!copyBtn || !copyLabel) return;
+        copyBtn.classList.add('is-copied');
+        copyLabel.textContent = 'Copied!';
+        setTimeout(function () {
+          copyBtn.classList.remove('is-copied');
+          copyLabel.textContent = 'Copy Summary';
+        }, 1600);
+      }
+
+      function matchesStatusFilter(el, filter) {
+        var status = el.getAttribute('data-status');
+        var hasUnmapped = el.getAttribute('data-unmapped') === '1';
+        if (filter === 'all') {
+          if (toggleIdentical && !toggleIdentical.checked && status === 'identical') {
+            return false;
+          }
+          return true;
+        }
+        if (filter === 'drifted') {
+          return status === 'only_a' || status === 'only_b' || status === 'modified';
+        }
+        if (filter === 'unmapped') {
+          return hasUnmapped;
+        }
+        return status === filter;
+      }
+
+      function applyFilters() {
+        var q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        if (searchBox) {
+          searchBox.classList.toggle('has-value', q.length > 0);
+        }
+
+        var visibleCount = 0;
+        for (var i = 0; i < tableCards.length; i++) {
+          var card = tableCards[i];
+          var hay = card.getAttribute('data-search') || '';
+          var show = matchesStatusFilter(card, activeFilter) && (q === '' || hay.indexOf(q) !== -1);
+          card.classList.toggle('is-hidden', !show);
+          if (show) visibleCount++;
+        }
+
+        for (var j = 0; j < navItems.length; j++) {
+          var nav = navItems[j];
+          var nhay = nav.getAttribute('data-search') || '';
+          var nshow = matchesStatusFilter(nav, activeFilter) && (q === '' || nhay.indexOf(q) !== -1);
+          nav.classList.toggle('is-hidden', !nshow);
+        }
+
+        if (counterEl) {
+          counterEl.textContent = 'Showing ' + visibleCount + ' of ' + tableCards.length + ' tables';
+        }
+        if (emptyMsg && tableCards.length > 0) {
+          emptyMsg.classList.toggle('is-hidden', visibleCount > 0);
+        }
+      }
+
+      function setActiveFilter(next) {
+        activeFilter = next;
+        if (next === 'identical' && toggleIdentical && !toggleIdentical.checked) {
+          toggleIdentical.checked = true;
+        }
+        filterButtons.forEach(function (btn) {
+          btn.classList.toggle('is-active', btn.getAttribute('data-filter') === next);
+        });
+        ledgerButtons.forEach(function (cell) {
+          cell.classList.toggle('is-active', cell.getAttribute('data-filter-target') === next);
+        });
+        applyFilters();
+      }
+
+      filterButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setActiveFilter(btn.getAttribute('data-filter'));
+        });
+      });
+
+      ledgerButtons.forEach(function (cell) {
+        cell.addEventListener('click', function () {
+          var target = cell.getAttribute('data-filter-target');
+          setActiveFilter(activeFilter === target ? 'all' : target);
+        });
+      });
+
+      if (searchInput) {
+        searchInput.addEventListener('input', applyFilters);
+      }
+
+      if (clearBtn && searchInput) {
+        clearBtn.addEventListener('click', function () {
+          searchInput.value = '';
+          applyFilters();
+          searchInput.focus();
+        });
+      }
+
+      if (toggleUnchanged) {
+        toggleUnchanged.addEventListener('change', function () {
+          document.body.classList.toggle('show-unchanged-cols', toggleUnchanged.checked);
+        });
+      }
+
+      if (toggleIdentical) {
+        toggleIdentical.addEventListener('change', applyFilters);
+      }
+
+      if (expandAllBtn) {
+        expandAllBtn.addEventListener('click', function () {
+          tableCards.forEach(function (card) {
+            if (!card.classList.contains('is-hidden')) card.open = true;
+          });
+        });
+      }
+
+      if (collapseAllBtn) {
+        collapseAllBtn.addEventListener('click', function () {
+          tableCards.forEach(function (card) {
+            card.open = false;
+          });
+        });
+      }
+
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+          if (searchInput) searchInput.value = '';
+          if (toggleIdentical) toggleIdentical.checked = true;
+          setActiveFilter('all');
+        });
+      }
+
+      
+      navItems.forEach(function (nav) {
+        nav.addEventListener('click', function () {
+          var target = document.getElementById(nav.getAttribute('data-anchor'));
+          if (target) target.open = true;
+        });
+      });
+
+      
+      document.addEventListener('click', function (e) {
+        if (e.target && e.target.classList.contains('reveal-cols-btn')) {
+          if (toggleUnchanged) {
+            toggleUnchanged.checked = true;
+            document.body.classList.add('show-unchanged-cols');
+          }
+        }
+      });
+
+      
+      document.addEventListener('keydown', function (e) {
+        if (e.key === '/' && document.activeElement !== searchInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          var tag = document.activeElement ? document.activeElement.tagName : '';
+          if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+            e.preventDefault();
+            if (searchInput) searchInput.focus();
+          }
+        } else if (e.key === 'Escape' && document.activeElement === searchInput) {
+          searchInput.value = '';
+          applyFilters();
+          searchInput.blur();
+        }
+      });
+
+      applyFilters();
+    })();
+  </script>
+</body>
+</html>

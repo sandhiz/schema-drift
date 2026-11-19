@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>schema-drift · {{.Report.SourceA.Label}} vs {{.Report.SourceB.Label}}</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg-canvas: #ffffff;
+      --bg-surface: #fafafa;
+      --bg-subtle: #f4f4f5;
+      --bg-hover: #ececef;
+      --border: #e4e4e7;
+      --border-strong: #d4d4d8;
+      --ink-primary: #09090b;
+      --ink-secondary: #3f3f46;
+      --ink-muted: #52525b;
+      --accent: #111113;
+      --accent-soft: rgba(17, 17, 19, 0.08);
+
+      --a-ink: #15803d;
+      --a-bg: rgba(21, 128, 61, 0.08);
+      --a-border: rgba(21, 128, 61, 0.28);
+      --a-solid: #16a34a;
+
+      --b-ink: #b91c1c;
+      --b-bg: rgba(185, 28, 28, 0.08);
+      --b-border: rgba(185, 28, 28, 0.28);
+      --b-solid: #dc2626;
+
+      --mod-ink: #b45309;
+      --mod-bg: rgba(180, 83, 9, 0.09);
+      --mod-border: rgba(180, 83, 9, 0.30);
+      --mod-solid: #d97706;
+
+      --eq-ink: #52525b;
+      --eq-bg: rgba(113, 113, 122, 0.10);
+      --eq-border: rgba(113, 113, 122, 0.25);
+      --eq-solid: #a1a1aa;
+
+      --unmap-ink: #6d28d9;
+      --unmap-bg: rgba(109, 40, 217, 0.09);
+      --unmap-border: rgba(109, 40, 217, 0.28);
+
+      --case-ink: #0369a1;
+      --case-bg: rgba(3, 105, 161, 0.09);
+      --case-border: rgba(3, 105, 161, 0.28);
+
+      --shadow-sm: 0 1px 2px rgba(9, 9, 11, 0.04);
+      --shadow-md: 0 6px 18px rgba(9, 9, 11, 0.06);
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg-canvas: #09090b;
+        --bg-surface: #0e0e11;
+        --bg-subtle: #141418;
+        --bg-hover: #1d1d23;
+        --border: #24242c;
+        --border-strong: #34343f;
+        --ink-primary: #f4f4f5;
+        --ink-secondary: #d4d4d8;
+        --ink-muted: #a1a1aa;
+        --accent: #f4f4f5;
+        --accent-soft: rgba(244, 244, 245, 0.12);
+
+        --a-ink: #4ade80;
+        --a-bg: rgba(34, 197, 94, 0.11);
+        --a-border: rgba(74, 222, 128, 0.30);
+        --a-solid: #22c55e;
+
+        --b-ink: #f87171;
+        --b-bg: rgba(239, 68, 68, 0.11);
+        --b-border: rgba(248, 113, 113, 0.30);
+        --b-solid: #ef4444;
+
+        --mod-ink: #fbbf24;
+        --mod-bg: rgba(245, 158, 11, 0.12);
+        --mod-border: rgba(251, 191, 36, 0.30);
+        --mod-solid: #f59e0b;
+
+        --eq-ink: #a1a1aa;
+        --eq-bg: rgba(161, 161, 170, 0.10);
+        --eq-border: rgba(161, 161, 170, 0.24);
+        --eq-solid: #52525b;
+
+        --unmap-ink: #c4b5fd;
+        --unmap-bg: rgba(139, 92, 246, 0.14);
+        --unmap-border: rgba(167, 139, 250, 0.32);
+
+        --case-ink: #7dd3fc;
+        --case-bg: rgba(56, 189, 248, 0.12);
+        --case-border: rgba(125, 211, 252, 0.28);
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg-canvas: #09090b;
+      --bg-surface: #0e0e11;
+      --bg-subtle: #141418;
+      --bg-hover: #1d1d23;
+      --border: #24242c;
+      --border-strong: #34343f;
+      --ink-primary: #f4f4f5;
+      --ink-secondary: #d4d4d8;
+      --ink-muted: #a1a1aa;
+      --accent: #f4f4f5;
+      --accent-soft: rgba(244, 244, 245, 0.12);
+
+      --a-ink: #4ade80;
+      --a-bg: rgba(34, 197, 94, 0.11);
+      --a-border: rgba(74, 222, 128, 0.30);
+      --a-solid: #22c55e;
+
+      --b-ink: #f87171;
+      --b-bg: rgba(239, 68, 68, 0.11);
+      --b-border: rgba(248, 113, 113, 0.30);
+      --b-solid: #ef4444;
+
+      --mod-ink: #fbbf24;
+      --mod-bg: rgba(245, 158, 11, 0.12);
+      --mod-border: rgba(251, 191, 36, 0.30);
+      --mod-solid: #f59e0b;
+
+      --eq-ink: #a1a1aa;
+      --eq-bg: rgba(161, 161, 170, 0.10);
+      --eq-border: rgba(161, 161, 170, 0.24);
+      --eq-solid: #52525b;
+
+      --unmap-ink: #c4b5fd;
+      --unmap-bg: rgba(139, 92, 246, 0.14);
+      --unmap-border: rgba(167, 139, 250, 0.32);
+
+      --case-ink: #7dd3fc;
+      --case-bg: rgba(56, 189, 248, 0.12);
+      --case-border: rgba(125, 211, 252, 0.28);
+
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    ::selection {
+      background: var(--accent-soft);
+      color: var(--ink-primary);
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg-canvas);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      caret-color: var(--accent);
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-strong) transparent;
+    }
+    *::-webkit-scrollbar { width: 8px; height: 8px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    *::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .num { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); }
+
+    .icon {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Sticky utility header */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .topbar-inner {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    @media (min-width: 1220px) {
+      .topbar-inner { flex-wrap: nowrap; }
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      color: var(--ink-primary);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .status-pill.is-drift {
+      background: var(--mod-bg);
+      color: var(--mod-ink);
+      border-color: var(--mod-border);
+    }
+
+    .status-pill.is-ok {
+      background: var(--a-bg);
+      color: var(--a-ink);
+      border-color: var(--a-border);
+    }
+
+    .endpoints {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1 1 auto;
+      justify-content: center;
+      min-width: 0;
+      max-width: 100%;
+      font-size: 12.5px;
+      color: var(--ink-secondary);
+    }
+
+    .endpoint-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px 9px;
+      max-width: 310px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .endpoint-side {
+      font-weight: 700;
+      font-size: 11px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--ink-primary);
+    }
+
+    .endpoint-engine {
+      font-weight: 600;
+      color: var(--ink-primary);
+      white-space: nowrap;
+    }
+
+    .endpoint-dsn {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .endpoint-count {
+      font-size: 11px;
+      color: var(--ink-muted);
+      white-space: nowrap;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 150ms ease, border-color 150ms ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--bg-subtle);
+      border-color: var(--border-strong);
+    }
+
+    .btn.is-copied {
+      color: var(--a-ink);
+      border-color: var(--a-border);
+      background: var(--a-bg);
+    }
+
+    .theme-group {
+      display: inline-flex;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+    }
+
+    .theme-btn {
+      border: 0;
+      background: transparent;
+      color: var(--ink-muted);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: color 150ms ease, background-color 150ms ease;
+    }
+
+    .theme-btn:hover { color: var(--ink-primary); }
+    .theme-btn.is-active {
+      background: var(--bg-surface);
+      color: var(--ink-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Main container */
+    .shell {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 18px 24px 48px;
+    }
+
+    /* Compact executive summary ledger */
+    .ledger {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .ledger-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ledger-cell {
+      appearance: none;
+      border: 0;
+      border-right: 1px solid var(--border);
+      background: transparent;
+      padding: 14px 18px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: background-color 150ms ease;
+      font-family: var(--font-sans);
+    }
+
+    .ledger-cell:last-child { border-right: 0; }
+    .ledger-cell:hover { background: var(--bg-subtle); }
+    .ledger-cell.is-active { background: var(--accent-soft); }
+
+    .ledger-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+    }
+
+    .ledger-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .dot-a { background: var(--a-solid); }
+    .dot-b { background: var(--b-solid); }
+    .dot-mod { background: var(--mod-solid); }
+    .dot-eq { background: var(--eq-solid); }
+
+    .ledger-val {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--ink-primary);
+    }
+
+    .ledger-val.is-a { color: var(--a-ink); }
+    .ledger-val.is-b { color: var(--b-ink); }
+    .ledger-val.is-mod { color: var(--mod-ink); }
+
+    .ledger-sub {
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .ledger-footer {
+      padding: 10px 18px;
+      background: var(--bg-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--ink-secondary);
+    }
+
+    .spectrum-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 240px;
+      max-width: 480px;
+    }
+
+    .spectrum-bar {
+      flex: 1;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--border);
+      overflow: hidden;
+      display: flex;
+    }
+
+    .seg-a { background: var(--a-solid); height: 100%; }
+    .seg-b { background: var(--b-solid); height: 100%; }
+    .seg-mod { background: var(--mod-solid); height: 100%; }
+    .seg-eq { background: var(--eq-solid); height: 100%; opacity: 0.55; }
+
+    .notice-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .meta-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--ink-secondary);
+    }
+
+    .meta-tag.is-unmapped {
+      color: var(--unmap-ink);
+      background: var(--unmap-bg);
+      border-color: var(--unmap-border);
+    }
+
+    .meta-tag.is-case {
+      color: var(--case-ink);
+      background: var(--case-bg);
+      border-color: var(--case-border);
+    }
+
+    /* Two-pane workbench */
+    .workbench {
+      display: grid;
+      grid-template-columns: 296px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 76px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 96px);
+      overflow: hidden;
+    }
+
+    .sidebar-controls {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      color: var(--ink-muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 7px 54px 7px 32px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      transition: border-color 150ms ease, background-color 150ms ease;
+    }
+
+    .search-input::placeholder { color: var(--ink-muted); }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: var(--bg-surface);
+    }
+
+    .kbd-hint {
+      position: absolute;
+      right: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-muted);
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      pointer-events: none;
+    }
+
+    .clear-search {
+      position: absolute;
+      right: 8px;
+      border: 0;
+      background: transparent;
+      color: var(--ink-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 11px;
+      display: none;
+    }
+    .clear-search:hover { color: var(--ink-primary); background: var(--bg-hover); }
+    .search-box.has-value .kbd-hint { display: none; }
+    .search-box.has-value .clear-search { display: inline-flex; }
+
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+      color: var(--ink-secondary);
+      font-family: var(--font-sans);
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+    }
+
+    .chip:hover {
+      background: var(--bg-hover);
+      color: var(--ink-primary);
+    }
+
+    .chip.is-active {
+      background: var(--ink-primary);
+      color: var(--bg-surface);
+      border-color: var(--ink-primary);
+    }
+
+    .nav-list {
+      overflow-y: auto;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 9px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--ink-primary);
+      font-size: 12.5px;
+      transition: background-color 120ms ease;
+    }
+
+    .nav-item:hover { background: var(--bg-subtle); }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .nav-name {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .nav-counts {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .c-a { color: var(--a-ink); }
+    .c-b { color: var(--b-ink); }
+    .c-mod { color: var(--mod-ink); }
+
+    /* Main canvas */
+    .canvas {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .canvas-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .canvas-count {
+      font-size: 13px;
+      color: var(--ink-secondary);
+      font-weight: 500;
+    }
+
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      color: var(--ink-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-label input {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Table diff panels */
+    .tbl-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      min-width: 0;
+      max-width: 100%;
+      scroll-margin-top: 82px;
+    }
+
+    .tbl-card[data-status="only_a"] { border-color: var(--a-border); }
+    .tbl-card[data-status="only_b"] { border-color: var(--b-border); }
+    .tbl-card[data-status="modified"] { border-color: var(--mod-border); }
+
+    .tbl-summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--bg-surface);
+      transition: background-color 140ms ease;
+      user-select: none;
+    }
+
+    .tbl-summary::-webkit-details-marker { display: none; }
+    .tbl-summary:hover { background: var(--bg-subtle); }
+
+    .tbl-card[open] > .tbl-summary {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tbl-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .chevron {
+      transition: transform 150ms ease;
+      color: var(--ink-muted);
+    }
+    .tbl-card[open] .chevron { transform: rotate(90deg); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .badge-only_a { color: var(--a-ink); background: var(--a-bg); border-color: var(--a-border); }
+    .badge-only_b { color: var(--b-ink); background: var(--b-bg); border-color: var(--b-border); }
+    .badge-modified { color: var(--mod-ink); background: var(--mod-bg); border-color: var(--mod-border); }
+    .badge-identical { color: var(--eq-ink); background: var(--eq-bg); border-color: var(--eq-border); }
+    .badge-unmapped { color: var(--unmap-ink); background: var(--unmap-bg); border-color: var(--unmap-border); }
+    .badge-case { color: var(--case-ink); background: var(--case-bg); border-color: var(--case-border); }
+
+    .tbl-name {
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink-primary);
+      word-break: break-word;
+    }
+
+    .tbl-origin {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--ink-muted);
+    }
+
+    .tbl-metrics {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    /* Column diff table */
+    .table-scroll {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .col-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    .col-table th {
+      text-align: left;
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink-muted);
+      background: var(--bg-subtle);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .col-table td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .col-table tr:last-child td { border-bottom: 0; }
+
+    .col-row[data-col-status="only_a"] td { background: var(--a-bg); }
+    .col-row[data-col-status="only_b"] td { background: var(--b-bg); }
+    .col-row[data-col-status="modified"] td { background: var(--mod-bg); }
+
+    body:not(.show-unchanged-cols) .tbl-card[data-status="modified"] .col-row[data-col-status="identical"] {
+      display: none;
+    }
+
+    .col-name {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--ink-primary);
+      white-space: nowrap;
+    }
+
+    .type-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .type-raw {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--ink-primary);
+    }
+
+    .type-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+    }
+
+    .canon-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      color: var(--ink-secondary);
+    }
+
+    .null-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-muted);
+    }
+
+    .def-code {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-secondary);
+      background: var(--bg-subtle);
+      padding: 1px 5px;
+      border-radius: 4px;
+      word-break: break-all;
+    }
+
+    .diff-pills {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .attr-diff {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--mod-border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      width: fit-content;
+    }
+
+    .attr-field {
+      font-weight: 700;
+      color: var(--mod-ink);
+      text-transform: capitalize;
+    }
+
+    .attr-val {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-primary);
+    }
+
+    .note-muted {
+      font-size: 11.5px;
+      color: var(--ink-muted);
+    }
+
+    .empty-cell {
+      color: var(--ink-muted);
+      font-style: italic;
+      font-size: 12px;
+    }
+
+    .tbl-foot-note {
+      padding: 8px 14px;
+      font-size: 12px;
+      color: var(--ink-muted);
+      background: var(--bg-subtle);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    body.show-unchanged-cols .unchanged-hint { display: none; }
+
+    /* Empty / zero states */
+    .empty-state {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 40px 24px;
+      text-align: center;
+      color: var(--ink-secondary);
+    }
+
+    .empty-state h2 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      color: var(--ink-primary);
+    }
+
+    .empty-state p {
+      margin: 0 auto 14px;
+      max-width: 60ch;
+      font-size: 13.5px;
+    }
+
+    .is-hidden { display: none !important; }
+
+    .report-footer {
+      margin-top: 24px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    @media (max-width: 960px) {
+      .topbar { position: static; }
+      .topbar-inner, .shell { padding-left: 14px; padding-right: 14px; }
+      .ledger-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .ledger-cell:nth-child(2) { border-right: 0; }
+      .ledger-cell:nth-child(1), .ledger-cell:nth-child(2) { border-bottom: 1px solid var(--border); }
+      .workbench { grid-template-columns: minmax(0, 1fr); }
+      .sidebar {
+        position: static;
+        max-height: 300px;
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .ledger-row { grid-template-columns: minmax(0, 1fr); }
+      .ledger-cell { border-right: 0; border-bottom: 1px solid var(--border); }
+      .ledger-cell:last-child { border-bottom: 0; }
+      .endpoints { flex: 0 0 100%; width: 100%; flex-direction: column; align-items: stretch; justify-content: flex-start; }
+      .endpoints-arrow { display: none; }
+      .endpoint-chip { width: 100%; max-width: 100%; }
+      .spectrum-wrap { min-width: 0; max-width: 100%; width: 100%; }
+      .topbar-actions { width: 100%; justify-content: space-between; }
+    }
+
+    @media print {
+      .topbar { position: static; box-shadow: none; }
+      .sidebar, .topbar-actions, .canvas-toolbar { display: none !important; }
+      .workbench { grid-template-columns: 1fr; }
+      .tbl-card { break-inside: avoid; box-shadow: none; }
+      body.show-unchanged-cols .col-row { display: table-row !important; }
+    }
+  </style>
+</head>
+<body>
+  <textarea id="sd-md-payload" class="sr-only" aria-hidden="true" tabindex="-1">{{.MarkdownSummary}}</textarea>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="7" height="16" rx="1.5"></rect>
+            <rect x="14" y="4" width="7" height="16" rx="1.5"></rect>
+            <path d="M10 9h4M10 15h4"></path>
+          </svg>
+        </span>
+        <h1 class="brand-title">schema-drift</h1>
+        {{if .Report.Summary.HasDrift}}
+          <span class="status-pill is-drift">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+            Drift Detected
+          </span>
+        {{else}}
+          <span class="status-pill is-ok">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>
+            Schemas Identical
+          </span>
+        {{end}}
+      </div>
+
+      <div class="endpoints" aria-label="Compared databases">
+        <div class="endpoint-chip" title="{{.Report.SourceA.MaskedDSN}}">
+          <span class="endpoint-side">A</span>
+          <span class="endpoint-engine">{{.Report.SourceA.Engine.DisplayName}}</span>
+          <span class="endpoint-dsn">{{.Report.SourceA.Label}}</span>
+          <span class="endpoint-count num">({{.Report.Summary.TablesReadA}} read)</span>
+        </div>
+        <svg class="icon endpoints-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-4-4 4 4-4 4"></path></svg>
+        <div class="endpoint-chip" title="{{.Report.SourceB.MaskedDSN}}">
+          <span class="endpoint-side">B</span>
+          <span class="endpoint-engine">{{.Report.SourceB.Engine.DisplayName}}</span>
+          <span class="endpoint-dsn">{{.Report.SourceB.Label}}</span>
+          <span class="endpoint-count num">({{.Report.Summary.TablesReadB}} read)</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button type="button" class="btn" id="copy-md-btn">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span id="copy-md-label">Copy Summary</span>
+        </button>
+        <div class="theme-group" role="group" aria-label="Color theme">
+          <button type="button" class="theme-btn is-active" data-theme-choice="auto">Auto</button>
+          <button type="button" class="theme-btn" data-theme-choice="light">Light</button>
+          <button type="button" class="theme-btn" data-theme-choice="dark">Dark</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="ledger" aria-label="Schema diff summary">
+      <div class="ledger-row">
+        <button type="button" class="ledger-cell" data-filter-target="only_a">
+          <div class="ledger-head">
+            <span class="ledger-label"><span class="dot dot-a"></span>Only in Source A</span>
+            <span class="mono">+</span>
+          </div>
+          <div class="ledger-val is-a num">{{.Report.Summary.TablesOnlyA}}</div>
+          <div class="ledger-sub num">
+            tables{{if gt .Report.Summary.ColumnsOnlyA 0}} · +{{.Report.Summary.ColumnsOnlyA}} cols in modified{{end}}
+          </div>
+        </button>
+
+        <button type="button" class="ledger-cell" data-filter-target="only_b">
+          <div class="ledger-head">
+            <span class="ledger-label"><span class="dot dot-b"></span>Only in Source B</span>
+            <span class="mono">-</span>
+          </div>
+          <div class="ledger-val is-b num">{{.Report.Summary.TablesOnlyB}}</div>
+          <div class="ledger-sub num">
+            tables{{if gt .Report.Summary.ColumnsOnlyB 0}} · -{{.Report.Summary.ColumnsOnlyB}} cols in modified{{end}}
+          </div>
+        </button>
+
+        <button type="button" class="ledger-cell" data-filter-target="modified">
+          <div class="ledger-head">
+            <span class="ledger-label"><span class="dot dot-mod"></span>Modified Tables</span>
+            <span class="mono">~</span>
+          </div>
+          <div class="ledger-val is-mod num">{{.Report.Summary.TablesModified}}</div>
+          <div class="ledger-sub num">
+            {{.Report.Summary.ColumnsModified}} changed cols · {{.Report.Summary.TypeMismatches}} type · {{.Report.Summary.LengthMismatches}} len · {{.Report.Summary.PrecisionMismatches}} prec
+          </div>
+        </button>
+
+        <button type="button" class="ledger-cell" data-filter-target="identical">
+          <div class="ledger-head">
+            <span class="ledger-label"><span class="dot dot-eq"></span>Identical Tables</span>
+            <span class="mono">=</span>
+          </div>
+          <div class="ledger-val num">{{.Report.Summary.TablesIdentical}}</div>
+          <div class="ledger-sub num">{{.Report.Summary.ColumnsIdentical}} matching columns</div>
+        </button>
+      </div>
+
+      <div class="ledger-footer">
+        <div class="spectrum-wrap">
+          <span class="num"><strong>{{.ParityPercent}}%</strong> table parity</span>
+          <div class="spectrum-bar" aria-hidden="true">
+            {{if gt .Report.Summary.TablesOnlyA 0}}<div class="seg-a" style="width: {{printf "%.2f" .PctOnlyA}}%"></div>{{end}}
+            {{if gt .Report.Summary.TablesOnlyB 0}}<div class="seg-b" style="width: {{printf "%.2f" .PctOnlyB}}%"></div>{{end}}
+            {{if gt .Report.Summary.TablesModified 0}}<div class="seg-mod" style="width: {{printf "%.2f" .PctModified}}%"></div>{{end}}
+            {{if gt .Report.Summary.TablesIdentical 0}}<div class="seg-eq" style="width: {{printf "%.2f" .PctIdentical}}%"></div>{{end}}
+          </div>
+        </div>
+
+        <div class="notice-strip">
+          {{if .Report.Summary.CrossEngine}}
+            <span class="meta-tag">Cross-engine normalized</span>
+          {{end}}
+          {{if gt .Report.Summary.UnmappedCount 0}}
+            <span class="meta-tag is-unmapped num">{{.Report.Summary.UnmappedCount}} unmapped type(s)</span>
+          {{end}}
+          {{if gt .Report.Summary.CaseDiffCount 0}}
+            <span class="meta-tag is-case num">{{.Report.Summary.CaseDiffCount}} casing notice(s)</span>
+          {{end}}
+          {{if gt .TotalIgnored 0}}
+            <span class="meta-tag num">{{.TotalIgnored}} ignored via glob</span>
+          {{end}}
+          <span class="meta-tag num">{{.GeneratedAtFormatted}}</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="workbench">
+      <aside class="sidebar" aria-label="Table navigator and filters">
+        <div class="sidebar-controls">
+          <div class="search-box" id="search-box">
+            <svg class="icon search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+            <input type="search" id="table-search" class="search-input" placeholder="Filter tables or columns…" aria-label="Filter tables or columns">
+            <span class="kbd-hint" aria-hidden="true">/</span>
+            <button type="button" class="clear-search" id="clear-search" aria-label="Clear search">Esc</button>
+          </div>
+
+          <div class="filter-chips" role="group" aria-label="Filter tables by status">
+            <button type="button" class="chip is-active" data-filter="all">All <span class="num">{{.TotalTablesVisible}}</span></button>
+            <button type="button" class="chip" data-filter="drifted">Drifted <span class="num">{{.Report.Summary.TotalTableDiffs}}</span></button>
+            <button type="button" class="chip" data-filter="only_a">Only A <span class="num">{{.Report.Summary.TablesOnlyA}}</span></button>
+            <button type="button" class="chip" data-filter="only_b">Only B <span class="num">{{.Report.Summary.TablesOnlyB}}</span></button>
+            <button type="button" class="chip" data-filter="modified">Modified <span class="num">{{.Report.Summary.TablesModified}}</span></button>
+            <button type="button" class="chip" data-filter="identical">Identical <span class="num">{{.Report.Summary.TablesIdentical}}</span></button>
+            {{if gt .Report.Summary.UnmappedCount 0}}
+              <button type="button" class="chip" data-filter="unmapped">Unmapped</button>
+            {{end}}
+          </div>
+        </div>
+
+        <nav class="nav-list" id="nav-list" aria-label="Table jump list">
+          {{range .Tables}}
+            <a href="#{{.AnchorID}}" class="nav-item"
+               data-anchor="{{.AnchorID}}"
+               data-status="{{.Status}}"
+               data-unmapped="{{if .HasUnmapped}}1{{else}}0{{end}}"
+               data-search="{{.SearchIndex}}">
+              <span class="nav-left">
+                <span class="dot {{if eq .Status "only_a"}}dot-a{{else if eq .Status "only_b"}}dot-b{{else if eq .Status "modified"}}dot-mod{{else}}dot-eq{{end}}"></span>
+                <span class="nav-name">{{.Name}}</span>
+              </span>
+              <span class="nav-counts num">
+                {{if eq .Status "only_a"}}<span class="c-a">+{{.TotalCols}}</span>{{end}}
+                {{if eq .Status "only_b"}}<span class="c-b">-{{.TotalCols}}</span>{{end}}
+                {{if eq .Status "modified"}}
+                  {{if gt .OnlyACols 0}}<span class="c-a">+{{.OnlyACols}}</span>{{end}}
+                  {{if gt .OnlyBCols 0}}<span class="c-b">-{{.OnlyBCols}}</span>{{end}}
+                  {{if gt .ModifiedCols 0}}<span class="c-mod">~{{.ModifiedCols}}</span>{{end}}
+                {{end}}
+              </span>
+            </a>
+          {{end}}
+        </nav>
+      </aside>
+
+      <section class="canvas" aria-label="Table comparison details">
+        <div class="canvas-toolbar">
+          <div class="canvas-count" id="visible-counter" aria-live="polite">
+            Showing {{.TotalTablesVisible}} of {{.TotalTablesVisible}} tables
+          </div>
+          <div class="toolbar-right">
+            <label class="toggle-label">
+              <input type="checkbox" id="toggle-unchanged-cols">
+              Show unchanged columns
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="toggle-identical-tables" checked>
+              Show identical tables
+            </label>
+            <button type="button" class="btn" id="expand-all-btn">Expand All</button>
+            <button type="button" class="btn" id="collapse-all-btn">Collapse All</button>
+          </div>
+        </div>
+
+        {{if eq (len .Tables) 0}}
+          <div class="empty-state">
+            <h2>No tables available to compare</h2>
+            <p>Both database snapshots returned zero non-ignored tables. Check your credentials, schema scope, or --ignore glob patterns.</p>
+          </div>
+        {{else}}
+          <div id="tables-container" class="canvas">
+            {{range .Tables}}
+              <details id="{{.AnchorID}}" class="tbl-card"
+                       data-status="{{.Status}}"
+                       data-unmapped="{{if .HasUnmapped}}1{{else}}0{{end}}"
+                       data-search="{{.SearchIndex}}"
+                       {{if .DefaultOpen}}open{{end}}>
+                <summary class="tbl-summary">
+                  <div class="tbl-title-group">
+                    <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                    <span class="badge badge-{{.Status}}">{{.StatusLabel}}</span>
+                    <h2 class="tbl-name">{{.Name}}</h2>
+                    {{if and (ne .SchemaA "") (ne .SchemaB "") (ne .SchemaA .SchemaB)}}
+                      <span class="tbl-origin">{{.SchemaA}}.{{.NameA}} vs {{.SchemaB}}.{{.NameB}}</span>
+                    {{else if and (ne .SchemaA "") (eq .Status "only_a")}}
+                      <span class="tbl-origin">{{.SchemaA}}.{{.NameA}}</span>
+                    {{else if and (ne .SchemaB "") (eq .Status "only_b")}}
+                      <span class="tbl-origin">{{.SchemaB}}.{{.NameB}}</span>
+                    {{end}}
+                    {{if .CaseDiff}}
+                      <span class="badge badge-case">Case: {{.NameA}} ↔ {{.NameB}}</span>
+                    {{end}}
+                    {{if .HasUnmapped}}
+                      <span class="badge badge-unmapped num">{{.UnmappedCount}} unmapped</span>
+                    {{end}}
+                  </div>
+
+                  <div class="tbl-metrics num">
+                    {{if eq .Status "only_a"}}
+                      <span class="c-a">+{{.TotalCols}} cols</span>
+                    {{else if eq .Status "only_b"}}
+                      <span class="c-b">-{{.TotalCols}} cols</span>
+                    {{else if eq .Status "modified"}}
+                      {{if gt .OnlyACols 0}}<span class="c-a">+{{.OnlyACols}}</span>{{end}}
+                      {{if gt .OnlyBCols 0}}<span class="c-b">-{{.OnlyBCols}}</span>{{end}}
+                      {{if gt .ModifiedCols 0}}<span class="c-mod">~{{.ModifiedCols}}</span>{{end}}
+                      {{if gt .IdenticalCols 0}}<span class="note-muted">={{.IdenticalCols}}</span>{{end}}
+                    {{else}}
+                      <span class="note-muted">{{.TotalCols}} cols</span>
+                    {{end}}
+                  </div>
+                </summary>
+
+                {{if eq (len .Columns) 0}}
+                  <div class="tbl-foot-note">This table has zero columns reported in metadata.</div>
+                {{else}}
+                  <div class="table-scroll">
+                    <table class="col-table">
+                      <thead>
+                        <tr>
+                          <th>Column</th>
+                          <th>Status</th>
+                          <th>Source A ({{$.Report.SourceA.Engine.DisplayName}})</th>
+                          <th>Target B ({{$.Report.SourceB.Engine.DisplayName}})</th>
+                          <th>Differences &amp; Notices</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {{range .Columns}}
+                          <tr class="col-row" data-col-status="{{.Status}}">
+                            <td>
+                              <div class="col-name">{{.Name}}</div>
+                              {{if .CaseDiff}}
+                                <div style="margin-top:4px"><span class="badge badge-case">{{.NameA}} ↔ {{.NameB}}</span></div>
+                              {{end}}
+                            </td>
+                            <td>
+                              <span class="badge badge-{{.Status}}">{{.StatusLabel}}</span>
+                            </td>
+                            <td>
+                              {{if .HasA}}
+                                <div class="type-stack">
+                                  <span class="type-raw">{{.RawA}}</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">{{.CanonicalA}}</span>
+                                    <span class="null-tag">{{.NullableA}}</span>
+                                    {{if ne .DefaultA ""}}<code class="def-code">DEFAULT {{.DefaultA}}</code>{{end}}
+                                  </div>
+                                </div>
+                              {{else}}
+                                <span class="empty-cell">not in A</span>
+                              {{end}}
+                            </td>
+                            <td>
+                              {{if .HasB}}
+                                <div class="type-stack">
+                                  <span class="type-raw">{{.RawB}}</span>
+                                  <div class="type-meta">
+                                    <span class="canon-tag" title="Canonical normalized type">{{.CanonicalB}}</span>
+                                    <span class="null-tag">{{.NullableB}}</span>
+                                    {{if ne .DefaultB ""}}<code class="def-code">DEFAULT {{.DefaultB}}</code>{{end}}
+                                  </div>
+                                </div>
+                              {{else}}
+                                <span class="empty-cell">not in B</span>
+                              {{end}}
+                            </td>
+                            <td>
+                              <div class="diff-pills">
+                                {{range .Diffs}}
+                                  <span class="attr-diff">
+                                    <span class="attr-field">{{.Field}}:</span>
+                                    <span class="attr-val">{{.ValueA}} → {{.ValueB}}</span>
+                                  </span>
+                                {{end}}
+                                {{if .Unmapped}}
+                                  <span class="badge badge-unmapped" title="This native type is outside the canonical cross-engine type map">unmapped type</span>
+                                {{end}}
+                                {{if .CrossEngineDefaultSkipped}}
+                                  <span class="note-muted">Cross-engine default expressions differ; presence matches.</span>
+                                {{end}}
+                                {{if and (eq (len .Diffs) 0) (not .Unmapped) (not .CrossEngineDefaultSkipped)}}
+                                  {{if eq .Status "only_a"}}
+                                    <span class="note-muted">Missing in B</span>
+                                  {{else if eq .Status "only_b"}}
+                                    <span class="note-muted">Missing in A</span>
+                                  {{else}}
+                                    <span class="note-muted">No changes</span>
+                                  {{end}}
+                                {{end}}
+                              </div>
+                            </td>
+                          </tr>
+                        {{end}}
+                      </tbody>
+                    </table>
+                  </div>
+                  {{if and (eq .Status "modified") (gt .IdenticalCols 0)}}
+                    <div class="tbl-foot-note unchanged-hint">
+                      <span class="num">{{.IdenticalCols}} unchanged column(s) hidden for focus.</span>
+                      <button type="button" class="btn reveal-cols-btn">Show all columns</button>
+                    </div>
+                  {{end}}
+                {{end}}
+              </details>
+            {{end}}
+          </div>
+
+          <div id="no-filter-matches" class="empty-state is-hidden">
+            <h2>No tables match your active filters</h2>
+            <p>Adjust your search query or reset the status filter to inspect all {{.TotalTablesVisible}} tables.</p>
+            <button type="button" class="btn" id="reset-filters-btn">Reset filters</button>
+          </div>
+        {{end}}
+      </section>
+    </div>
+
+    <footer class="report-footer">
+      <span>Generated by <strong>schema-drift</strong> · Read-only metadata inspection (zero row data read)</span>
+      <span class="num">
+        {{if ne .DurationFormatted ""}}Completed in {{.DurationFormatted}} · {{end}}{{.GeneratedAtFormatted}}
+      </span>
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var searchInput = document.getElementById('table-search');
+      var searchBox = document.getElementById('search-box');
+      var clearBtn = document.getElementById('clear-search');
+      var filterButtons = Array.prototype.slice.call(document.querySelectorAll('.chip[data-filter]'));
+      var ledgerButtons = Array.prototype.slice.call(document.querySelectorAll('.ledger-cell[data-filter-target]'));
+      var toggleUnchanged = document.getElementById('toggle-unchanged-cols');
+      var toggleIdentical = document.getElementById('toggle-identical-tables');
+      var expandAllBtn = document.getElementById('expand-all-btn');
+      var collapseAllBtn = document.getElementById('collapse-all-btn');
+      var copyBtn = document.getElementById('copy-md-btn');
+      var copyLabel = document.getElementById('copy-md-label');
+      var resetBtn = document.getElementById('reset-filters-btn');
+      var emptyMsg = document.getElementById('no-filter-matches');
+      var counterEl = document.getElementById('visible-counter');
+      var tableCards = Array.prototype.slice.call(document.querySelectorAll('.tbl-card'));
+      var navItems = Array.prototype.slice.call(document.querySelectorAll('.nav-item'));
+      var themeBtns = Array.prototype.slice.call(document.querySelectorAll('.theme-btn'));
+
+      var activeFilter = 'all';
+
+      // Theme switching
+      function setTheme(choice) {
+        if (choice === 'light' || choice === 'dark') {
+          root.setAttribute('data-theme', choice);
+        } else {
+          root.removeAttribute('data-theme');
+        }
+        themeBtns.forEach(function (btn) {
+          btn.classList.toggle('is-active', btn.getAttribute('data-theme-choice') === choice);
+        });
+        try { localStorage.setItem('schema-drift-theme', choice); } catch (_) {}
+      }
+
+      try {
+        var urlTheme = new URLSearchParams(window.location.search).get('theme');
+        var savedTheme = urlTheme || localStorage.getItem('schema-drift-theme');
+        if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') {
+          setTheme(savedTheme);
+        }
+      } catch (_) {}
+
+      themeBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setTheme(btn.getAttribute('data-theme-choice'));
+        });
+      });
+
+      // Copy Markdown Summary
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+          var md = document.getElementById('sd-md-payload').value || '';
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(md).then(showCopied, showCopied);
+          } else {
+            showCopied();
+          }
+        });
+      }
+
+      function showCopied() {
+        if (!copyBtn || !copyLabel) return;
+        copyBtn.classList.add('is-copied');
+        copyLabel.textContent = 'Copied!';
+        setTimeout(function () {
+          copyBtn.classList.remove('is-copied');
+          copyLabel.textContent = 'Copy Summary';
+        }, 1600);
+      }
+
+      function matchesStatusFilter(el, filter) {
+        var status = el.getAttribute('data-status');
+        var hasUnmapped = el.getAttribute('data-unmapped') === '1';
+        if (filter === 'all') {
+          if (toggleIdentical && !toggleIdentical.checked && status === 'identical') {
+            return false;
+          }
+          return true;
+        }
+        if (filter === 'drifted') {
+          return status === 'only_a' || status === 'only_b' || status === 'modified';
+        }
+        if (filter === 'unmapped') {
+          return hasUnmapped;
+        }
+        return status === filter;
+      }
+
+      function applyFilters() {
+        var q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        if (searchBox) {
+          searchBox.classList.toggle('has-value', q.length > 0);
+        }
+
+        var visibleCount = 0;
+        for (var i = 0; i < tableCards.length; i++) {
+          var card = tableCards[i];
+          var hay = card.getAttribute('data-search') || '';
+          var show = matchesStatusFilter(card, activeFilter) && (q === '' || hay.indexOf(q) !== -1);
+          card.classList.toggle('is-hidden', !show);
+          if (show) visibleCount++;
+        }
+
+        for (var j = 0; j < navItems.length; j++) {
+          var nav = navItems[j];
+          var nhay = nav.getAttribute('data-search') || '';
+          var nshow = matchesStatusFilter(nav, activeFilter) && (q === '' || nhay.indexOf(q) !== -1);
+          nav.classList.toggle('is-hidden', !nshow);
+        }
+
+        if (counterEl) {
+          counterEl.textContent = 'Showing ' + visibleCount + ' of ' + tableCards.length + ' tables';
+        }
+        if (emptyMsg && tableCards.length > 0) {
+          emptyMsg.classList.toggle('is-hidden', visibleCount > 0);
+        }
+      }
+
+      function setActiveFilter(next) {
+        activeFilter = next;
+        if (next === 'identical' && toggleIdentical && !toggleIdentical.checked) {
+          toggleIdentical.checked = true;
+        }
+        filterButtons.forEach(function (btn) {
+          btn.classList.toggle('is-active', btn.getAttribute('data-filter') === next);
+        });
+        ledgerButtons.forEach(function (cell) {
+          cell.classList.toggle('is-active', cell.getAttribute('data-filter-target') === next);
+        });
+        applyFilters();
+      }
+
+      filterButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setActiveFilter(btn.getAttribute('data-filter'));
+        });
+      });
+
+      ledgerButtons.forEach(function (cell) {
+        cell.addEventListener('click', function () {
+          var target = cell.getAttribute('data-filter-target');
+          setActiveFilter(activeFilter === target ? 'all' : target);
+        });
+      });
+
+      if (searchInput) {
+        searchInput.addEventListener('input', applyFilters);
+      }
+
+      if (clearBtn && searchInput) {
+        clearBtn.addEventListener('click', function () {
+          searchInput.value = '';
+          applyFilters();
+          searchInput.focus();
+        });
+      }
+
+      if (toggleUnchanged) {
+        toggleUnchanged.addEventListener('change', function () {
+          document.body.classList.toggle('show-unchanged-cols', toggleUnchanged.checked);
+        });
+      }
+
+      if (toggleIdentical) {
+        toggleIdentical.addEventListener('change', applyFilters);
+      }
+
+      if (expandAllBtn) {
+        expandAllBtn.addEventListener('click', function () {
+          tableCards.forEach(function (card) {
+            if (!card.classList.contains('is-hidden')) card.open = true;
+          });
+        });
+      }
+
+      if (collapseAllBtn) {
+        collapseAllBtn.addEventListener('click', function () {
+          tableCards.forEach(function (card) {
+            card.open = false;
+          });
+        });
+      }
+
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+          if (searchInput) searchInput.value = '';
+          if (toggleIdentical) toggleIdentical.checked = true;
+          setActiveFilter('all');
+        });
+      }
+
+      // Clicking a sidebar nav item ensures the target table card opens
+      navItems.forEach(function (nav) {
+        nav.addEventListener('click', function () {
+          var target = document.getElementById(nav.getAttribute('data-anchor'));
+          if (target) target.open = true;
+        });
+      });
+
+      // Local "Show all columns" button inside a modified table
+      document.addEventListener('click', function (e) {
+        if (e.target && e.target.classList.contains('reveal-cols-btn')) {
+          if (toggleUnchanged) {
+            toggleUnchanged.checked = true;
+            document.body.classList.add('show-unchanged-cols');
+          }
+        }
+      });
+
+      // Keyboard shortcut: '/' focuses search, 'Escape' clears it
+      document.addEventListener('keydown', function (e) {
+        if (e.key === '/' && document.activeElement !== searchInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          var tag = document.activeElement ? document.activeElement.tagName : '';
+          if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+            e.preventDefault();
+            if (searchInput) searchInput.focus();
+          }
+        } else if (e.key === 'Escape' && document.activeElement === searchInput) {
+          searchInput.value = '';
+          applyFilters();
+          searchInput.blur();
+        }
+      });
+
+      applyFilters();
+    })();
+  </script>
+</body>
+</html>
