@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -74,6 +75,9 @@ func RunWithDeps(args []string, stdout, stderr io.Writer, deps Dependencies) int
 
 	if len(args) > 0 && args[0] == "serve" {
 		return runServe(args[1:], stdout, stderr, deps)
+	}
+	if len(args) > 0 && isServeShorthandArgs(args) {
+		return runServe(args, stdout, stderr, deps)
 	}
 	if len(args) == 0 &&
 		strings.TrimSpace(os.Getenv("SCHEMA_DRIFT_A")) == "" &&
@@ -302,6 +306,7 @@ func pickLabel(custom, fallback string) string {
 func printUsage(w io.Writer, fs *flag.FlagSet) {
 	fmt.Fprintln(w, "Usage:")
 	fmt.Fprintln(w, "  schema-drift                                   Launch local Web UI (when interactive)")
+	fmt.Fprintln(w, "  schema-drift -p 3000                           Launch Web UI on a custom port")
 	fmt.Fprintln(w, "  schema-drift serve [options]                   Launch local interactive Web UI")
 	fmt.Fprintln(w, "  schema-drift --a <dsn> --b <dsn> [options]     Compare two schemas in terminal / HTML")
 	fmt.Fprintln(w, "")
@@ -313,10 +318,12 @@ func printUsage(w io.Writer, fs *flag.FlagSet) {
 	fmt.Fprintln(w, "Options:")
 	fs.PrintDefaults()
 	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "Environment variables:")
-	fmt.Fprintln(w, "  SCHEMA_DRIFT_A   Fallback DSN for source A")
-	fmt.Fprintln(w, "  SCHEMA_DRIFT_B   Fallback DSN for source B")
-	fmt.Fprintln(w, "  NO_COLOR         Disable ANSI color output when non-empty")
+	fmt.Fprintln(w, "Environment variables (auto-loaded from .env if present):")
+	fmt.Fprintln(w, "  SCHEMA_DRIFT_A      Fallback DSN for source A")
+	fmt.Fprintln(w, "  SCHEMA_DRIFT_B      Fallback DSN for source B")
+	fmt.Fprintln(w, "  SCHEMA_DRIFT_PORT   Default Web UI port (fallback: PORT)")
+	fmt.Fprintln(w, "  SCHEMA_DRIFT_ADDR   Default Web UI bind address (host:port)")
+	fmt.Fprintln(w, "  NO_COLOR            Disable ANSI color output when non-empty")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Exit codes:")
 	fmt.Fprintln(w, "  0  Schemas are identical")
@@ -324,9 +331,124 @@ func printUsage(w io.Writer, fs *flag.FlagSet) {
 	fmt.Fprintln(w, "  2  Connection, query, or argument error")
 }
 
+func isServeShorthandArgs(args []string) bool {
+	hasServeFlag := false
+	for _, raw := range args {
+		name := strings.SplitN(raw, "=", 2)[0]
+		switch name {
+		case "-a", "--a", "-b", "--b", "-out", "--out", "-ignore", "--ignore",
+			"-schema-a", "--schema-a", "-schema-b", "--schema-b",
+			"-label-a", "--label-a", "-label-b", "--label-b",
+			"-strict-case", "--strict-case", "-version", "--version":
+			return false
+		case "-p", "--p", "-port", "--port", "-addr", "--addr",
+			"-open", "--open", "-no-open", "--no-open",
+			"-v", "--v", "-verbose", "--verbose":
+			hasServeFlag = true
+		}
+	}
+	return hasServeFlag
+}
+
+type serveAddrResult struct {
+	Addr     string
+	Explicit bool
+}
+
+func resolveServeAddr(addrFlag string, addrSet bool, portFlag int, portSet bool, getenv func(string) string) (serveAddrResult, error) {
+	addr := "127.0.0.1:8080"
+	explicit := false
+
+	if getenv == nil {
+		getenv = os.Getenv
+	}
+
+	if !addrSet {
+		if envAddr := strings.TrimSpace(getenv("SCHEMA_DRIFT_ADDR")); envAddr != "" {
+			addr = envAddr
+			explicit = true
+		} else if !portSet {
+			for _, envName := range []string{"SCHEMA_DRIFT_PORT", "PORT"} {
+				if raw := strings.TrimSpace(getenv(envName)); raw != "" {
+					p, err := strconv.Atoi(raw)
+					if err != nil || p < 0 || p > 65535 {
+						return serveAddrResult{}, fmt.Errorf("invalid %s %q: must be between 0 and 65535", envName, raw)
+					}
+					addr = net.JoinHostPort("127.0.0.1", strconv.Itoa(p))
+					explicit = true
+					break
+				}
+			}
+		}
+	} else {
+		trimmed := strings.TrimSpace(addrFlag)
+		if trimmed == "" {
+			return serveAddrResult{}, errors.New("--addr cannot be empty")
+		}
+		addr = trimmed
+		explicit = true
+	}
+
+	if portSet {
+		if portFlag < 0 || portFlag > 65535 {
+			return serveAddrResult{}, errors.New("--port must be between 0 and 65535")
+		}
+		host, _, splitErr := net.SplitHostPort(addr)
+		if splitErr != nil {
+			if !strings.Contains(addr, ":") && addr != "" {
+				host = addr
+			} else {
+				return serveAddrResult{}, fmt.Errorf("invalid --addr %q: %w", addr, splitErr)
+			}
+		}
+		addr = net.JoinHostPort(host, strconv.Itoa(portFlag))
+		explicit = true
+	}
+
+	return serveAddrResult{Addr: addr, Explicit: explicit}, nil
+}
+
+func listenServe(addr string, allowFallback bool) (net.Listener, bool, error) {
+	ln, err := net.Listen("tcp", addr)
+	if err == nil || !allowFallback {
+		return ln, false, err
+	}
+
+	host, portStr, splitErr := net.SplitHostPort(addr)
+	if splitErr != nil {
+		return nil, false, err
+	}
+	basePort, convErr := strconv.Atoi(portStr)
+	if convErr != nil {
+		return nil, false, err
+	}
+
+	for p := basePort + 1; p <= basePort+19 && p <= 65535; p++ {
+		if fbLn, fbErr := net.Listen("tcp", net.JoinHostPort(host, strconv.Itoa(p))); fbErr == nil {
+			return fbLn, true, nil
+		}
+	}
+	if fbLn, fbErr := net.Listen("tcp", net.JoinHostPort(host, "0")); fbErr == nil {
+		return fbLn, true, nil
+	}
+	return nil, false, err
+}
+
+func buildBrowserURL(lnAddr net.Addr) string {
+	host, port, err := net.SplitHostPort(lnAddr.String())
+	if err != nil {
+		return "http://" + lnAddr.String()
+	}
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		host = "127.0.0.1"
+	}
+	return "http://" + net.JoinHostPort(host, port)
+}
+
 func runServe(args []string, stdout, stderr io.Writer, deps Dependencies) int {
 	var (
 		addr    string
+		port    int
 		timeout time.Duration
 		openUI  bool
 		noOpen  bool
@@ -336,7 +458,9 @@ func runServe(args []string, stdout, stderr io.Writer, deps Dependencies) int {
 
 	fs := flag.NewFlagSet("schema-drift serve", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	fs.StringVar(&addr, "addr", "127.0.0.1:8080", "HTTP address for the local Web UI")
+	fs.StringVar(&addr, "addr", "127.0.0.1:8080", "HTTP bind address (host:port) for the local Web UI")
+	fs.IntVar(&port, "port", -1, "Port for the local Web UI (0 picks a random free port; default 8080)")
+	fs.IntVar(&port, "p", -1, "Alias for --port")
 	fs.DurationVar(&timeout, "timeout", 30*time.Second, "Default database connection and metadata query timeout")
 	fs.BoolVar(&openUI, "open", true, "Open the Web UI automatically in your default browser")
 	fs.BoolVar(&noOpen, "no-open", false, "Do not open the browser automatically")
@@ -345,10 +469,15 @@ func runServe(args []string, stdout, stderr io.Writer, deps Dependencies) int {
 	fs.BoolVar(&noColor, "no-color", false, "Disable ANSI terminal colors in logs")
 	fs.Usage = func() {
 		fmt.Fprintln(stderr, "Usage:")
-		fmt.Fprintln(stderr, "  schema-drift serve [--addr 127.0.0.1:8080] [--no-open] [--verbose] [--timeout 30s]")
+		fmt.Fprintln(stderr, "  schema-drift serve [--port 8080] [--addr 127.0.0.1:8080] [--no-open] [--verbose] [--timeout 30s]")
+		fmt.Fprintln(stderr, "  schema-drift -p 3000")
 		fmt.Fprintln(stderr, "")
 		fmt.Fprintln(stderr, "Options:")
 		fs.PrintDefaults()
+		fmt.Fprintln(stderr, "")
+		fmt.Fprintln(stderr, "Environment variables (auto-loaded from .env in working directory if present):")
+		fmt.Fprintln(stderr, "  SCHEMA_DRIFT_PORT / PORT   Default port (e.g. PORT=3000)")
+		fmt.Fprintln(stderr, "  SCHEMA_DRIFT_ADDR          Default bind address (e.g. 0.0.0.0:9090)")
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -364,6 +493,17 @@ func runServe(args []string, stdout, stderr io.Writer, deps Dependencies) int {
 
 	if timeout <= 0 {
 		fmt.Fprintln(stderr, "error: --timeout must be positive")
+		return ExitError
+	}
+
+	visited := make(map[string]bool)
+	fs.Visit(func(f *flag.Flag) {
+		visited[f.Name] = true
+	})
+
+	resolved, err := resolveServeAddr(addr, visited["addr"], port, visited["port"] || visited["p"], os.Getenv)
+	if err != nil {
+		fmt.Fprintf(stderr, "error: %v\n", err)
 		return ExitError
 	}
 
@@ -383,14 +523,20 @@ func runServe(args []string, stdout, stderr io.Writer, deps Dependencies) int {
 		return ExitError
 	}
 
-	ln, err := net.Listen("tcp", addr)
+	ln, fellBack, err := listenServe(resolved.Addr, !resolved.Explicit)
 	if err != nil {
-		fmt.Fprintf(stderr, "error listening on %s: %v\n", addr, err)
+		fmt.Fprintf(stderr, "error listening on %s: %v\n", resolved.Addr, err)
 		return ExitError
 	}
 
-	url := "http://" + ln.Addr().String()
+	url := buildBrowserURL(ln.Addr())
+	if fellBack {
+		srv.Logger().Warn("Server", "Default address %s is already in use; switched to %s", resolved.Addr, url)
+	}
 	srv.Logger().OK("Server", "Web UI listening on %s (read-only metadata mode)", url)
+	if envPath := LoadedDotEnvPath(); envPath != "" {
+		srv.Logger().Info("Server", "Loaded local configuration from %s", envPath)
+	}
 	if verbose {
 		srv.Logger().Info("Server", "Verbose SQL catalog logging enabled (--verbose)")
 	}

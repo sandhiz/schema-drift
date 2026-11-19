@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -194,6 +195,9 @@ func TestCLIServeHelpAndErrors(t *testing.T) {
 	if !strings.Contains(errBuf.String(), "-verbose") || !strings.Contains(errBuf.String(), "-no-color") || !strings.Contains(errBuf.String(), "-no-open") {
 		t.Errorf("serve --help missing -verbose, -no-color, or -no-open flags: %s", errBuf.String())
 	}
+	if !strings.Contains(errBuf.String(), "-port") || (!strings.Contains(errBuf.String(), "-p\t") && !strings.Contains(errBuf.String(), "-p ")) {
+		t.Errorf("serve --help missing -port or -p flags: %s", errBuf.String())
+	}
 
 	out.Reset()
 	errBuf.Reset()
@@ -207,5 +211,202 @@ func TestCLIServeHelpAndErrors(t *testing.T) {
 	code = Run([]string{"serve", "--addr", "127.0.0.1:-1"}, &out, &errBuf)
 	if code != ExitError {
 		t.Fatalf("serve invalid addr exit = %d, want 2", code)
+	}
+
+	for _, badArgs := range [][]string{
+		{"--port", "70000"},
+		{"-p", "-5"},
+	} {
+		out.Reset()
+		errBuf.Reset()
+		code = Run(badArgs, &out, &errBuf)
+		if code != ExitError {
+			t.Fatalf("Run(%v) = %d, want 2 (stderr: %s)", badArgs, code, errBuf.String())
+		}
+	}
+}
+
+func TestResolveServeAddr(t *testing.T) {
+	makeEnv := func(m map[string]string) func(string) string {
+		return func(k string) string { return m[k] }
+	}
+
+	cases := []struct {
+		name     string
+		addrFlag string
+		addrSet  bool
+		portFlag int
+		portSet  bool
+		env      map[string]string
+		wantAddr string
+		wantExp  bool
+		wantErr  bool
+	}{
+		{
+			name:     "default",
+			addrFlag: "127.0.0.1:8080",
+			portFlag: -1,
+			wantAddr: "127.0.0.1:8080",
+			wantExp:  false,
+		},
+		{
+			name:     "PORT env",
+			addrFlag: "127.0.0.1:8080",
+			portFlag: -1,
+			env:      map[string]string{"PORT": "3000"},
+			wantAddr: "127.0.0.1:3000",
+			wantExp:  true,
+		},
+		{
+			name:     "SCHEMA_DRIFT_PORT overrides PORT",
+			addrFlag: "127.0.0.1:8080",
+			portFlag: -1,
+			env:      map[string]string{"PORT": "3000", "SCHEMA_DRIFT_PORT": "4000"},
+			wantAddr: "127.0.0.1:4000",
+			wantExp:  true,
+		},
+		{
+			name:     "SCHEMA_DRIFT_ADDR overrides SCHEMA_DRIFT_PORT",
+			addrFlag: "127.0.0.1:8080",
+			portFlag: -1,
+			env:      map[string]string{"SCHEMA_DRIFT_PORT": "4000", "SCHEMA_DRIFT_ADDR": "0.0.0.0:9000"},
+			wantAddr: "0.0.0.0:9000",
+			wantExp:  true,
+		},
+		{
+			name:     "--port overrides env",
+			addrFlag: "127.0.0.1:8080",
+			portFlag: 3000,
+			portSet:  true,
+			env:      map[string]string{"PORT": "4000", "SCHEMA_DRIFT_ADDR": "0.0.0.0:9000"},
+			wantAddr: "0.0.0.0:3000",
+			wantExp:  true,
+		},
+		{
+			name:     "--addr and --port combine host and port",
+			addrFlag: ":8080",
+			addrSet:  true,
+			portFlag: 3000,
+			portSet:  true,
+			wantAddr: ":3000",
+			wantExp:  true,
+		},
+		{
+			name:     "--port 0 allowed",
+			addrFlag: "127.0.0.1:8080",
+			portFlag: 0,
+			portSet:  true,
+			wantAddr: "127.0.0.1:0",
+			wantExp:  true,
+		},
+		{
+			name:     "invalid --port negative",
+			addrFlag: "127.0.0.1:8080",
+			portFlag: -1,
+			portSet:  true,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid --port too high",
+			addrFlag: "127.0.0.1:8080",
+			portFlag: 70000,
+			portSet:  true,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid PORT env",
+			addrFlag: "127.0.0.1:8080",
+			portFlag: -1,
+			env:      map[string]string{"PORT": "abc"},
+			wantErr:  true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := resolveServeAddr(tc.addrFlag, tc.addrSet, tc.portFlag, tc.portSet, makeEnv(tc.env))
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got %+v", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got.Addr != tc.wantAddr || got.Explicit != tc.wantExp {
+				t.Fatalf("got %+v, want Addr=%q Explicit=%v", got, tc.wantAddr, tc.wantExp)
+			}
+		})
+	}
+}
+
+func TestListenServeFallback(t *testing.T) {
+	busy, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("net.Listen setup error: %v", err)
+	}
+	defer busy.Close()
+
+	busyAddr := busy.Addr().String()
+	if ln, fellBack, err := listenServe(busyAddr, false); err == nil {
+		ln.Close()
+		t.Fatalf("listenServe(%s, false) unexpectedly succeeded (fellBack=%v)", busyAddr, fellBack)
+	}
+
+	fb, fellBack, err := listenServe(busyAddr, true)
+	if err != nil {
+		t.Fatalf("listenServe(%s, true) failed: %v", busyAddr, err)
+	}
+	defer fb.Close()
+
+	if !fellBack {
+		t.Fatalf("expected fellBack=true when binding busy %s", busyAddr)
+	}
+	if fb.Addr().String() == busyAddr {
+		t.Fatalf("fallback listener bound to same busy address %s", busyAddr)
+	}
+}
+
+type fakeNetAddr string
+
+func (f fakeNetAddr) Network() string { return "tcp" }
+func (f fakeNetAddr) String() string  { return string(f) }
+
+func TestBuildBrowserURL(t *testing.T) {
+	cases := []struct {
+		in   string
+		want string
+	}{
+		{"127.0.0.1:3000", "http://127.0.0.1:3000"},
+		{"0.0.0.0:3000", "http://127.0.0.1:3000"},
+		{"[::]:3000", "http://127.0.0.1:3000"},
+		{":3000", "http://127.0.0.1:3000"},
+	}
+	for _, tc := range cases {
+		if got := buildBrowserURL(fakeNetAddr(tc.in)); got != tc.want {
+			t.Errorf("buildBrowserURL(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestIsServeShorthandArgs(t *testing.T) {
+	cases := []struct {
+		args []string
+		want bool
+	}{
+		{[]string{"-p", "3000"}, true},
+		{[]string{"--port=9090"}, true},
+		{[]string{"--addr", ":4000"}, true},
+		{[]string{"-v"}, true},
+		{[]string{"--help"}, false},
+		{[]string{"--version"}, false},
+		{[]string{"--a", "postgres://u:p@h/a", "--b", "postgres://u:p@h/b"}, false},
+		{[]string{"--a", "postgres://u:p@h/a", "--port", "3000"}, false},
+	}
+	for _, tc := range cases {
+		if got := isServeShorthandArgs(tc.args); got != tc.want {
+			t.Errorf("isServeShorthandArgs(%v) = %v, want %v", tc.args, got, tc.want)
+		}
 	}
 }

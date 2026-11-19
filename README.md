@@ -96,7 +96,35 @@ schema-drift
 *(Or `schema-drift serve -v` / `.\schema-drift.exe` if running the local built binary.)*
 
 **Windows Explorer double-click:**
-Double-click [`start-ui.bat`](start-ui.bat) to open the console log window and launch the Web UI automatically.
+Double-click [`start-ui.bat`](start-ui.bat) to open the console log window and launch the Web UI automatically (or run `start-ui.bat -p 3000` to use a custom port).
+
+**Using a custom port (`.env`, CLI flag, or automatic fallback):**
+Edit a local `.env` file (gitignored) so you don't have to pass flags every time:
+
+```bash
+cp .env.example .env
+# Then set e.g. PORT=3000 in .env — schema-drift loads .env automatically
+```
+
+You can also override `.env` anytime from the command line, or let `schema-drift` automatically fall back to the next free port if default `8080` is busy:
+
+```bash
+# Shorthand flag (-p / --port) — overrides .env and does not require "serve"
+go run . -p 3000
+schema-drift --port 9090
+
+# Pick a random available free port automatically
+schema-drift -p 0
+
+# Or via shell environment variable
+PORT=3000 schema-drift
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:PORT = "3000"; schema-drift
+```
 
 By default, the Web UI listens on `http://127.0.0.1:8080`. Just like a Node.js / NestJS server, real-time colored execution logs stream directly to your terminal (and inside the collapsible **Go Server Console** drawer at the bottom of the Web UI):
 
@@ -212,11 +240,12 @@ Example GitHub Actions step:
 
 ### Web UI Subcommand (`schema-drift serve`)
 
-Running `schema-drift` (or `go run .`) with no arguments in an interactive terminal automatically starts `serve`.
+Running `schema-drift` (or `go run .`) with no arguments in an interactive terminal — or passing serve flags like `-p 3000` — automatically starts `serve`. If a `.env` file exists in the working directory (or beside the binary), its values are loaded automatically.
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--addr` | `127.0.0.1:8080` | HTTP bind address and port for the local Web UI |
+| `--port` / `-p` | `8080` (`$SCHEMA_DRIFT_PORT` / `$PORT` / `.env`) | HTTP port for the local Web UI (`0` picks a random free port) |
+| `--addr` | `127.0.0.1:8080` (`$SCHEMA_DRIFT_ADDR`) | Full HTTP bind address (`host:port`) for the local Web UI |
 | `--open` | `true` | Automatically open the Web UI URL in your default browser |
 | `--no-open` | `false` | Start the server without launching a browser window |
 | `--verbose` / `-v` | `false` | Stream executed read-only catalog SQL queries (`[SQL]`) in logs |
